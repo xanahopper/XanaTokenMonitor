@@ -1,0 +1,864 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0C300B69C0841F6A93A101C9 /* ModelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA412864E794469728AAB5A5 /* ModelProvider.swift */; };
+		1F7C64BAAF2BF6A2823501C8 /* ProviderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C59AFFFEC17AA0685BD404AA /* ProviderManager.swift */; };
+		220D7605B8968531CF8E9427 /* QuotaStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ADD6B75E7619F320ACB928 /* QuotaStyle.swift */; };
+		268A57E3E3375DE56D50077D /* TokenMonitorWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3AD2C1BB372D5065B715BBC /* TokenMonitorWidget.swift */; };
+		2BEBB0AFD5A49892A3E40A71 /* BrandIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8469340B52A9BD20228706E /* BrandIcons.swift */; };
+		31D84A701829EA87FE33CB79 /* ModelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA412864E794469728AAB5A5 /* ModelProvider.swift */; };
+		44155B5B56AA735C5C7FFCA2 /* XanaTokenMonitorWatchOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E470681B066F89407DE70515 /* XanaTokenMonitorWatchOSApp.swift */; };
+		53FFD38ECBE7448FF706E5FE /* XanaTokenMonitorMacOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37121995BC4A879A723C8971 /* XanaTokenMonitorMacOSApp.swift */; };
+		5CEC5B8AA7835412AAF98C55 /* ProviderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C59AFFFEC17AA0685BD404AA /* ProviderManager.swift */; };
+		5DDA521EBB27256A10269F7C /* XanaTokenMonitorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 77833C890BA2AF878CEF96B4 /* XanaTokenMonitorKit */; };
+		613161D83155F14E8AB1EDD7 /* MenuBarQuotaPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 811AC609F4ABF3A0C73A96DF /* MenuBarQuotaPanel.swift */; };
+		619C4D0B3CDFE85833D3C345 /* ProviderListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA6008BA48290997B1B25D6A /* ProviderListView.swift */; };
+		6500F25BC54122188F2860ED /* QuotaStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ADD6B75E7619F320ACB928 /* QuotaStyle.swift */; };
+		7C2AE74FBCBC64CA7FF80453 /* WidgetBrandIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C54BBBF5A1136E67ACDB8C3 /* WidgetBrandIcons.swift */; };
+		83E72089A6650C078FEF7E81 /* XanaTokenMonitorKit in Frameworks */ = {isa = PBXBuildFile; productRef = AD2BD1B4B9CF112BA1AA99EE /* XanaTokenMonitorKit */; };
+		84A66193A5324C0EC2744488 /* BrandIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8469340B52A9BD20228706E /* BrandIcons.swift */; };
+		8A989A6F6416A62069668091 /* ModelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA412864E794469728AAB5A5 /* ModelProvider.swift */; };
+		8AE0C71232C886B96E402D9F /* TokenMonitorWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3AD2C1BB372D5065B715BBC /* TokenMonitorWidget.swift */; };
+		902E79E864A39951E2D82D2E /* MenuBarQuotaPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 811AC609F4ABF3A0C73A96DF /* MenuBarQuotaPanel.swift */; };
+		9576F8A4E6E758070CE1850E /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6859A419EE290DE20AB877F /* WidgetSnapshot.swift */; };
+		A178C8B7BCCECD283D168A95 /* XanaTokenMonitorKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2CF5469835EC3828BB50C49A /* XanaTokenMonitorKit */; };
+		A982210586CFB1C80BF4274B /* QuotaStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91ADD6B75E7619F320ACB928 /* QuotaStyle.swift */; };
+		ABC90552A1ACA5A09EE61F6F /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6859A419EE290DE20AB877F /* WidgetSnapshot.swift */; };
+		B559477E3A4AF95338DBAC5F /* ProviderListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA6008BA48290997B1B25D6A /* ProviderListView.swift */; };
+		C371DF57E508AF76E2759A80 /* XanaTokenMonitorKit in Frameworks */ = {isa = PBXBuildFile; productRef = B2D9CA987910BE8B636B79CC /* XanaTokenMonitorKit */; };
+		C41DC81968FD24B2D96D1B3D /* ProviderListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA6008BA48290997B1B25D6A /* ProviderListView.swift */; };
+		CC9C1D072D78EC562DCECA3D /* TokenMonitorWidgetMacOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 79A488AD929E08FB21A25987 /* TokenMonitorWidgetMacOS.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CE8190F347179436FA86DFA6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0CFA824A1BAAD3624DD6559 /* Assets.xcassets */; };
+		D1AFDE14165593BDEFC4CD28 /* XanaTokenMonitorIOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0418E3C27302EEF8F516818 /* XanaTokenMonitorIOSApp.swift */; };
+		D2CA0F0FEEF577F79A006C4E /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6859A419EE290DE20AB877F /* WidgetSnapshot.swift */; };
+		E19616FC2299B8B3E91AACCA /* BrandIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8469340B52A9BD20228706E /* BrandIcons.swift */; };
+		E5850A7430C628B321CDBFE2 /* WidgetBrandIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C54BBBF5A1136E67ACDB8C3 /* WidgetBrandIcons.swift */; };
+		E84C875FD0C7EA4509F667BE /* MenuBarQuotaPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 811AC609F4ABF3A0C73A96DF /* MenuBarQuotaPanel.swift */; };
+		F81294DDA98ABB0E61EFC769 /* ProviderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C59AFFFEC17AA0685BD404AA /* ProviderManager.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D5663DC19E3569F668607CFE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AFBDF7B8396787BC6B5A0C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BECB2983F9661E51E38FD3AB;
+			remoteInfo = TokenMonitorWidgetMacOS;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		6B322814A030E930DD610C7F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				CC9C1D072D78EC562DCECA3D /* TokenMonitorWidgetMacOS.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0CBFE7DEC9092E80DD51BBCC /* XanaTokenMonitorMacOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XanaTokenMonitorMacOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		11C2D350244622CE72C82198 /* XanaTokenMonitoriOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = XanaTokenMonitoriOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1FC9C8BC6277C3D4CCAF43AA /* TokenMonitorWidgetMacOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TokenMonitorWidgetMacOS.entitlements; sourceTree = "<group>"; };
+		37121995BC4A879A723C8971 /* XanaTokenMonitorMacOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XanaTokenMonitorMacOSApp.swift; sourceTree = "<group>"; };
+		407FA24006B7861BE58F04E2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		59A697113C98866E267BAFD6 /* XanaTokenMonitorWatchOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XanaTokenMonitorWatchOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		79A488AD929E08FB21A25987 /* TokenMonitorWidgetMacOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TokenMonitorWidgetMacOS.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		811AC609F4ABF3A0C73A96DF /* MenuBarQuotaPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarQuotaPanel.swift; sourceTree = "<group>"; };
+		8AFC37C5131EA98DDEF1E491 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		91ADD6B75E7619F320ACB928 /* QuotaStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaStyle.swift; sourceTree = "<group>"; };
+		9C54BBBF5A1136E67ACDB8C3 /* WidgetBrandIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBrandIcons.swift; sourceTree = "<group>"; };
+		A0CFA824A1BAAD3624DD6559 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A6CA1541EDC70699C962AEAA /* XanaTokenMonitorMacOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = XanaTokenMonitorMacOS.entitlements; sourceTree = "<group>"; };
+		AF4453F0741A77182E6F397B /* TokenMonitorWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TokenMonitorWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B452238909A4BD3FC9EDBA7E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B6859A419EE290DE20AB877F /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
+		C59AFFFEC17AA0685BD404AA /* ProviderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderManager.swift; sourceTree = "<group>"; };
+		CA6008BA48290997B1B25D6A /* ProviderListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderListView.swift; sourceTree = "<group>"; };
+		CF67AC2977E81F4C6B565191 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		D0418E3C27302EEF8F516818 /* XanaTokenMonitorIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XanaTokenMonitorIOSApp.swift; sourceTree = "<group>"; };
+		E3AD2C1BB372D5065B715BBC /* TokenMonitorWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenMonitorWidget.swift; sourceTree = "<group>"; };
+		E470681B066F89407DE70515 /* XanaTokenMonitorWatchOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XanaTokenMonitorWatchOSApp.swift; sourceTree = "<group>"; };
+		EA412864E794469728AAB5A5 /* ModelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelProvider.swift; sourceTree = "<group>"; };
+		F8469340B52A9BD20228706E /* BrandIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandIcons.swift; sourceTree = "<group>"; };
+		FD486AC62DA325BFF0B43EE1 /* xana-token-monitor */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "xana-token-monitor"; path = .; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		86D91172198EDDE6C3F86CC5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A178C8B7BCCECD283D168A95 /* XanaTokenMonitorKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C515A366E1C2A0B830EE6BD8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C371DF57E508AF76E2759A80 /* XanaTokenMonitorKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E71F57AC38334C3CFA07473A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5DDA521EBB27256A10269F7C /* XanaTokenMonitorKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F189BB65079C9D9D051EC504 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				83E72089A6650C078FEF7E81 /* XanaTokenMonitorKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0C3B517121F6714D388108B4 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				FD486AC62DA325BFF0B43EE1 /* xana-token-monitor */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		240BAD7213109A7FF6B5FCDA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AF4453F0741A77182E6F397B /* TokenMonitorWidget.appex */,
+				79A488AD929E08FB21A25987 /* TokenMonitorWidgetMacOS.appex */,
+				11C2D350244622CE72C82198 /* XanaTokenMonitoriOS.app */,
+				0CBFE7DEC9092E80DD51BBCC /* XanaTokenMonitorMacOS.app */,
+				59A697113C98866E267BAFD6 /* XanaTokenMonitorWatchOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		43E7F68E3C1E38ACAC3E4053 = {
+			isa = PBXGroup;
+			children = (
+				EB60A331C7F84FACC755896E /* iOS */,
+				925CF6BD02192101A7509A43 /* macOS */,
+				0C3B517121F6714D388108B4 /* Packages */,
+				D7216DE6C9E7F0EA1E992307 /* watchOS */,
+				A27C48B69C6531CB211954F8 /* WidgetExtension */,
+				FA0C9B46B19174D37EFB5651 /* XanaTokenMonitorKit */,
+				240BAD7213109A7FF6B5FCDA /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		543AF2DCBAB003D988EFB2D0 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C59AFFFEC17AA0685BD404AA /* ProviderManager.swift */,
+				B6859A419EE290DE20AB877F /* WidgetSnapshot.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		69F8D09FADFE7DF8BC40C081 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				F8469340B52A9BD20228706E /* BrandIcons.swift */,
+				811AC609F4ABF3A0C73A96DF /* MenuBarQuotaPanel.swift */,
+				CA6008BA48290997B1B25D6A /* ProviderListView.swift */,
+				91ADD6B75E7619F320ACB928 /* QuotaStyle.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		925CF6BD02192101A7509A43 /* macOS */ = {
+			isa = PBXGroup;
+			children = (
+				A0CFA824A1BAAD3624DD6559 /* Assets.xcassets */,
+				B452238909A4BD3FC9EDBA7E /* Info.plist */,
+				A6CA1541EDC70699C962AEAA /* XanaTokenMonitorMacOS.entitlements */,
+				37121995BC4A879A723C8971 /* XanaTokenMonitorMacOSApp.swift */,
+			);
+			path = macOS;
+			sourceTree = "<group>";
+		};
+		A27C48B69C6531CB211954F8 /* WidgetExtension */ = {
+			isa = PBXGroup;
+			children = (
+				8AFC37C5131EA98DDEF1E491 /* Info.plist */,
+				E3AD2C1BB372D5065B715BBC /* TokenMonitorWidget.swift */,
+				1FC9C8BC6277C3D4CCAF43AA /* TokenMonitorWidgetMacOS.entitlements */,
+				9C54BBBF5A1136E67ACDB8C3 /* WidgetBrandIcons.swift */,
+			);
+			path = WidgetExtension;
+			sourceTree = "<group>";
+		};
+		B7B4EEAC429DCE8ADB55D9D2 /* XanaTokenMonitorKit */ = {
+			isa = PBXGroup;
+			children = (
+				E1BDA71282149BC991D73DFB /* Models */,
+				543AF2DCBAB003D988EFB2D0 /* Services */,
+				69F8D09FADFE7DF8BC40C081 /* Views */,
+			);
+			name = XanaTokenMonitorKit;
+			path = Sources/XanaTokenMonitorKit;
+			sourceTree = "<group>";
+		};
+		D7216DE6C9E7F0EA1E992307 /* watchOS */ = {
+			isa = PBXGroup;
+			children = (
+				407FA24006B7861BE58F04E2 /* Info.plist */,
+				E470681B066F89407DE70515 /* XanaTokenMonitorWatchOSApp.swift */,
+			);
+			path = watchOS;
+			sourceTree = "<group>";
+		};
+		E1BDA71282149BC991D73DFB /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				EA412864E794469728AAB5A5 /* ModelProvider.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		EB60A331C7F84FACC755896E /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				CF67AC2977E81F4C6B565191 /* Info.plist */,
+				D0418E3C27302EEF8F516818 /* XanaTokenMonitorIOSApp.swift */,
+			);
+			path = iOS;
+			sourceTree = "<group>";
+		};
+		FA0C9B46B19174D37EFB5651 /* XanaTokenMonitorKit */ = {
+			isa = PBXGroup;
+			children = (
+				B7B4EEAC429DCE8ADB55D9D2 /* XanaTokenMonitorKit */,
+			);
+			name = XanaTokenMonitorKit;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3CAFFE6963B529F12B3E095A /* XanaTokenMonitoriOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 65EEF99F22A5B390450279D8 /* Build configuration list for PBXNativeTarget "XanaTokenMonitoriOS" */;
+			buildPhases = (
+				75C1240949607DDD5DA3D03D /* Sources */,
+				E71F57AC38334C3CFA07473A /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = XanaTokenMonitoriOS;
+			packageProductDependencies = (
+				77833C890BA2AF878CEF96B4 /* XanaTokenMonitorKit */,
+			);
+			productName = XanaTokenMonitoriOS;
+			productReference = 11C2D350244622CE72C82198 /* XanaTokenMonitoriOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		762E11C392EA348FD7A11237 /* XanaTokenMonitorMacOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1C5EEF3054C349B2FB045379 /* Build configuration list for PBXNativeTarget "XanaTokenMonitorMacOS" */;
+			buildPhases = (
+				39D0C0DA3D5754AE94A3E125 /* Sources */,
+				21187BB4257672D81F5461D9 /* Resources */,
+				F189BB65079C9D9D051EC504 /* Frameworks */,
+				6B322814A030E930DD610C7F /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				16D52C4779087AA465921DC8 /* PBXTargetDependency */,
+			);
+			name = XanaTokenMonitorMacOS;
+			packageProductDependencies = (
+				AD2BD1B4B9CF112BA1AA99EE /* XanaTokenMonitorKit */,
+			);
+			productName = XanaTokenMonitorMacOS;
+			productReference = 0CBFE7DEC9092E80DD51BBCC /* XanaTokenMonitorMacOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B7E446E037F14E34FC3C9E02 /* TokenMonitorWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1974DF6D4E591660E71128D8 /* Build configuration list for PBXNativeTarget "TokenMonitorWidget" */;
+			buildPhases = (
+				59E5ADE9F1FA0C0B7C1AE458 /* Sources */,
+				86D91172198EDDE6C3F86CC5 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TokenMonitorWidget;
+			packageProductDependencies = (
+				2CF5469835EC3828BB50C49A /* XanaTokenMonitorKit */,
+			);
+			productName = TokenMonitorWidget;
+			productReference = AF4453F0741A77182E6F397B /* TokenMonitorWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		BC865637E2CBAAB97997423D /* XanaTokenMonitorWatchOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C957EBBCFF87D481FD0FE1F3 /* Build configuration list for PBXNativeTarget "XanaTokenMonitorWatchOS" */;
+			buildPhases = (
+				5EF6BAE3146587B63A57A310 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = XanaTokenMonitorWatchOS;
+			packageProductDependencies = (
+			);
+			productName = XanaTokenMonitorWatchOS;
+			productReference = 59A697113C98866E267BAFD6 /* XanaTokenMonitorWatchOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		BECB2983F9661E51E38FD3AB /* TokenMonitorWidgetMacOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 03BBF151D1DF87A8240F9C11 /* Build configuration list for PBXNativeTarget "TokenMonitorWidgetMacOS" */;
+			buildPhases = (
+				66CFC63045F079122A14BB33 /* Sources */,
+				C515A366E1C2A0B830EE6BD8 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TokenMonitorWidgetMacOS;
+			packageProductDependencies = (
+				B2D9CA987910BE8B636B79CC /* XanaTokenMonitorKit */,
+			);
+			productName = TokenMonitorWidgetMacOS;
+			productReference = 79A488AD929E08FB21A25987 /* TokenMonitorWidgetMacOS.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AFBDF7B8396787BC6B5A0C5A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					762E11C392EA348FD7A11237 = {
+						DevelopmentTeam = "";
+					};
+				};
+			};
+			buildConfigurationList = A8F77F8921864456BFDCDCA6 /* Build configuration list for PBXProject "XanaTokenMonitor" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 43E7F68E3C1E38ACAC3E4053;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				0C1C7853F3EFD13E479224DB /* XCLocalSwiftPackageReference "." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 240BAD7213109A7FF6B5FCDA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B7E446E037F14E34FC3C9E02 /* TokenMonitorWidget */,
+				BECB2983F9661E51E38FD3AB /* TokenMonitorWidgetMacOS */,
+				762E11C392EA348FD7A11237 /* XanaTokenMonitorMacOS */,
+				BC865637E2CBAAB97997423D /* XanaTokenMonitorWatchOS */,
+				3CAFFE6963B529F12B3E095A /* XanaTokenMonitoriOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		21187BB4257672D81F5461D9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CE8190F347179436FA86DFA6 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		39D0C0DA3D5754AE94A3E125 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E19616FC2299B8B3E91AACCA /* BrandIcons.swift in Sources */,
+				613161D83155F14E8AB1EDD7 /* MenuBarQuotaPanel.swift in Sources */,
+				0C300B69C0841F6A93A101C9 /* ModelProvider.swift in Sources */,
+				B559477E3A4AF95338DBAC5F /* ProviderListView.swift in Sources */,
+				5CEC5B8AA7835412AAF98C55 /* ProviderManager.swift in Sources */,
+				6500F25BC54122188F2860ED /* QuotaStyle.swift in Sources */,
+				D2CA0F0FEEF577F79A006C4E /* WidgetSnapshot.swift in Sources */,
+				53FFD38ECBE7448FF706E5FE /* XanaTokenMonitorMacOSApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		59E5ADE9F1FA0C0B7C1AE458 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				268A57E3E3375DE56D50077D /* TokenMonitorWidget.swift in Sources */,
+				E5850A7430C628B321CDBFE2 /* WidgetBrandIcons.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5EF6BAE3146587B63A57A310 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				84A66193A5324C0EC2744488 /* BrandIcons.swift in Sources */,
+				E84C875FD0C7EA4509F667BE /* MenuBarQuotaPanel.swift in Sources */,
+				31D84A701829EA87FE33CB79 /* ModelProvider.swift in Sources */,
+				C41DC81968FD24B2D96D1B3D /* ProviderListView.swift in Sources */,
+				F81294DDA98ABB0E61EFC769 /* ProviderManager.swift in Sources */,
+				220D7605B8968531CF8E9427 /* QuotaStyle.swift in Sources */,
+				ABC90552A1ACA5A09EE61F6F /* WidgetSnapshot.swift in Sources */,
+				44155B5B56AA735C5C7FFCA2 /* XanaTokenMonitorWatchOSApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		66CFC63045F079122A14BB33 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8AE0C71232C886B96E402D9F /* TokenMonitorWidget.swift in Sources */,
+				7C2AE74FBCBC64CA7FF80453 /* WidgetBrandIcons.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		75C1240949607DDD5DA3D03D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2BEBB0AFD5A49892A3E40A71 /* BrandIcons.swift in Sources */,
+				902E79E864A39951E2D82D2E /* MenuBarQuotaPanel.swift in Sources */,
+				8A989A6F6416A62069668091 /* ModelProvider.swift in Sources */,
+				619C4D0B3CDFE85833D3C345 /* ProviderListView.swift in Sources */,
+				1F7C64BAAF2BF6A2823501C8 /* ProviderManager.swift in Sources */,
+				A982210586CFB1C80BF4274B /* QuotaStyle.swift in Sources */,
+				9576F8A4E6E758070CE1850E /* WidgetSnapshot.swift in Sources */,
+				D1AFDE14165593BDEFC4CD28 /* XanaTokenMonitorIOSApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		16D52C4779087AA465921DC8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BECB2983F9661E51E38FD3AB /* TokenMonitorWidgetMacOS */;
+			targetProxy = D5663DC19E3569F668607CFE /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1C1EB345BC6F2432B997919E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		26A1D64DC379350334C6FDEA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = iOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xana.XanaTokenMonitoriOS;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		36A5E29C96E8F8977D17DC55 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = WidgetExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xana.XanaTokenMonitoriOS.Widget;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		582E0EF103A6B729EFEBD311 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = watchOS/Info.plist;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xana.XanaTokenMonitorWatchOS;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Release;
+		};
+		614605E4EBBF1352EB826D74 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = watchOS/Info.plist;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xana.XanaTokenMonitorWatchOS;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Debug;
+		};
+		70CD74A1027E0E1A49E7D735 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = WidgetExtension/TokenMonitorWidgetMacOS.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = WidgetExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xana.XanaTokenMonitorMacOS.Widget;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		805BCE1AEF4375C4DEB42AAA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_ENTITLEMENTS = macOS/XanaTokenMonitorMacOS.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = macOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xana.XanaTokenMonitorMacOS;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		A66A154D5381BB19A4E7F16C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = WidgetExtension/TokenMonitorWidgetMacOS.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = WidgetExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xana.XanaTokenMonitorMacOS.Widget;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		AC056BE608213F5E0CC34F66 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = WidgetExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xana.XanaTokenMonitoriOS.Widget;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D3A413D869DD22F1BC885D08 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_ENTITLEMENTS = macOS/XanaTokenMonitorMacOS.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = macOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xana.XanaTokenMonitorMacOS;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		DA872561FF9541825FB0B99A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		EEF75737DB9D70B7BB81D53A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = iOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xana.XanaTokenMonitoriOS;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		03BBF151D1DF87A8240F9C11 /* Build configuration list for PBXNativeTarget "TokenMonitorWidgetMacOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				70CD74A1027E0E1A49E7D735 /* Debug */,
+				A66A154D5381BB19A4E7F16C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		1974DF6D4E591660E71128D8 /* Build configuration list for PBXNativeTarget "TokenMonitorWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				36A5E29C96E8F8977D17DC55 /* Debug */,
+				AC056BE608213F5E0CC34F66 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		1C5EEF3054C349B2FB045379 /* Build configuration list for PBXNativeTarget "XanaTokenMonitorMacOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D3A413D869DD22F1BC885D08 /* Debug */,
+				805BCE1AEF4375C4DEB42AAA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		65EEF99F22A5B390450279D8 /* Build configuration list for PBXNativeTarget "XanaTokenMonitoriOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				26A1D64DC379350334C6FDEA /* Debug */,
+				EEF75737DB9D70B7BB81D53A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A8F77F8921864456BFDCDCA6 /* Build configuration list for PBXProject "XanaTokenMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1C1EB345BC6F2432B997919E /* Debug */,
+				DA872561FF9541825FB0B99A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C957EBBCFF87D481FD0FE1F3 /* Build configuration list for PBXNativeTarget "XanaTokenMonitorWatchOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				614605E4EBBF1352EB826D74 /* Debug */,
+				582E0EF103A6B729EFEBD311 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		0C1C7853F3EFD13E479224DB /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2CF5469835EC3828BB50C49A /* XanaTokenMonitorKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = XanaTokenMonitorKit;
+		};
+		77833C890BA2AF878CEF96B4 /* XanaTokenMonitorKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = XanaTokenMonitorKit;
+		};
+		AD2BD1B4B9CF112BA1AA99EE /* XanaTokenMonitorKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = XanaTokenMonitorKit;
+		};
+		B2D9CA987910BE8B636B79CC /* XanaTokenMonitorKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = XanaTokenMonitorKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = AFBDF7B8396787BC6B5A0C5A /* Project object */;
+}
