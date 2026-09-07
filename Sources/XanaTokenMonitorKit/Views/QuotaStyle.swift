@@ -54,6 +54,7 @@ struct QuotaBar: View {
     var height: CGFloat = 5
     /// 按额度日分配后的可用下限(0...1),画一根细竖线标记
     var marker: Double? = nil
+    var animatesChanges = true
 
     var body: some View {
         GeometryReader { proxy in
@@ -74,7 +75,7 @@ struct QuotaBar: View {
             }
         }
         .frame(height: height)
-        .animation(.easeInOut(duration: 0.25), value: remainingPercent)
+        .animation(animatesChanges ? .easeInOut(duration: 0.25) : nil, value: remainingPercent)
     }
 
     private func fillWidth(total: CGFloat) -> CGFloat {

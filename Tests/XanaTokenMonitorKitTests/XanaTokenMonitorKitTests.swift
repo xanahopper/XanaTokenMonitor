@@ -2,6 +2,32 @@ import XCTest
 @testable import XanaTokenMonitorKit
 
 final class XanaTokenMonitorKitTests: XCTestCase {
+    func testQuotaHistoryMergesRapidRefreshesAndDropsExpiredSamples() throws {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let expired = try historySample(
+            timestamp: now.addingTimeInterval(-QuotaHistoryStore.retentionInterval - 1),
+            remainingPercent: 90
+        )
+        let recent = try historySample(
+            timestamp: now.addingTimeInterval(-300),
+            remainingPercent: 80
+        )
+        let rapidRefresh = try historySample(
+            timestamp: now.addingTimeInterval(-270),
+            remainingPercent: 75
+        )
+
+        let result = QuotaHistoryStore.appending(
+            rapidRefresh,
+            to: [expired, recent],
+            now: now
+        )
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].quotas[0].remainingPercent, 75)
+        XCTAssertEqual(result[0].timestamp, rapidRefresh.timestamp)
+    }
+
     func testWeeklyQuotaMarkerAllocatesOneWholeShareAtEachResetBoundary() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: 0))
@@ -354,5 +380,23 @@ final class XanaTokenMonitorKitTests: XCTestCase {
         XCTAssertEqual(balance.details?["quota_0_percentage_mode"], "used")
         XCTAssertEqual(balance.details?["quota_1_percentage"], "25")
         XCTAssertEqual(balance.details?["quota_1_percentage_mode"], "used")
+    }
+
+    private func historySample(
+        timestamp: Date,
+        remainingPercent: Int
+    ) throws -> QuotaHistorySample {
+        let usedPercent = 100 - remainingPercent
+        return try XCTUnwrap(QuotaHistorySample(balance: Balance(
+            amount: Double(usedPercent) / 100,
+            currency: "used_percent",
+            timestamp: timestamp,
+            details: [
+                "quotas_count": "1",
+                "quota_0_name": "周",
+                "quota_0_percentage": String(usedPercent),
+                "quota_0_durationMins": "10080"
+            ]
+        )))
     }
 }

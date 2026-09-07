@@ -1,6 +1,98 @@
 import Foundation
 import Combine
 
+struct QuotaHistoryValue: Codable, Sendable, Equatable, Identifiable {
+    let index: Int
+    let name: String
+    let remainingPercent: Double
+    let resetDate: Date?
+
+    var id: Int { index }
+}
+
+struct QuotaHistorySample: Codable, Sendable, Equatable, Identifiable {
+    let timestamp: Date
+    let quotas: [QuotaHistoryValue]
+
+    var id: Date { timestamp }
+
+    init?(balance: Balance) {
+        let values = QuotaDisplay.quotas(for: balance).compactMap { quota -> QuotaHistoryValue? in
+            guard let remainingPercent = quota.remainingPercent else { return nil }
+            return QuotaHistoryValue(
+                index: quota.index,
+                name: quota.name,
+                remainingPercent: remainingPercent,
+                resetDate: quota.resetDate
+            )
+        }
+        guard !values.isEmpty else { return nil }
+        timestamp = balance.timestamp
+        quotas = values
+    }
+}
+
+struct QuotaHistoryStore {
+    static let retentionInterval: TimeInterval = 30 * 24 * 60 * 60
+    static let mergeInterval: TimeInterval = 60
+
+    let fileURL: URL
+
+    static var appDefault: QuotaHistoryStore {
+        let baseURL = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first ?? FileManager.default.temporaryDirectory
+        return QuotaHistoryStore(
+            fileURL: baseURL
+                .appendingPathComponent("XanaTokenMonitor", isDirectory: true)
+                .appendingPathComponent("quota-history.json")
+        )
+    }
+
+    func load() -> [UUID: [QuotaHistorySample]] {
+        guard let data = try? Data(contentsOf: fileURL),
+              let archive = try? JSONDecoder().decode([String: [QuotaHistorySample]].self, from: data) else {
+            return [:]
+        }
+        return Dictionary(uniqueKeysWithValues: archive.compactMap { key, value in
+            UUID(uuidString: key).map { ($0, value.sorted { $0.timestamp < $1.timestamp }) }
+        })
+    }
+
+    func save(_ history: [UUID: [QuotaHistorySample]]) {
+        let archive = Dictionary(uniqueKeysWithValues: history.map { ($0.key.uuidString, $0.value) })
+        guard let data = try? JSONEncoder().encode(archive) else { return }
+        do {
+            try FileManager.default.createDirectory(
+                at: fileURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            // 历史记录是辅助信息，写盘失败不影响实时额度刷新。
+        }
+    }
+
+    static func appending(
+        _ sample: QuotaHistorySample,
+        to samples: [QuotaHistorySample],
+        now: Date
+    ) -> [QuotaHistorySample] {
+        let cutoff = now.addingTimeInterval(-retentionInterval)
+        var retained = samples.filter { $0.timestamp >= cutoff }
+
+        if let last = retained.last,
+           abs(sample.timestamp.timeIntervalSince(last.timestamp)) < mergeInterval {
+            retained[retained.count - 1] = sample
+        } else {
+            retained.append(sample)
+        }
+        retained.sort { $0.timestamp < $1.timestamp }
+        return retained
+    }
+}
+
 @Observable
 @MainActor
 class ProviderManager {
@@ -8,10 +100,14 @@ class ProviderManager {
     var balances: [UUID: Balance] = [:]
     var errors: [UUID: Error] = [:]
     var providerNames: [UUID: String] = [:]
+    private(set) var quotaHistory: [UUID: [QuotaHistorySample]]
     var pollingInterval: TimeInterval = 300 // 5 minutes
     private var pollingTask: Task<Void, Never>?
+    private let historyStore: QuotaHistoryStore
     
-    init() {
+    init(historyStore: QuotaHistoryStore = .appDefault) {
+        self.historyStore = historyStore
+        quotaHistory = historyStore.load()
         loadProviders()
     }
     
@@ -38,7 +134,9 @@ class ProviderManager {
         balances.removeValue(forKey: id)
         errors.removeValue(forKey: id)
         providerNames.removeValue(forKey: id)
+        quotaHistory.removeValue(forKey: id)
         saveProviders()
+        historyStore.save(quotaHistory)
         WidgetSnapshot.push(providers: providers, balances: balances, displayNames: providerNames)
     }
     
@@ -63,14 +161,28 @@ class ProviderManager {
             }
         }
         
+        let historyNow = Date()
+        var didChangeHistory = false
         for (id, result) in results {
             switch result {
             case .success(let balance):
                 balances[id] = balance
                 errors.removeValue(forKey: id)
+                if let sample = QuotaHistorySample(balance: balance) {
+                    quotaHistory[id] = QuotaHistoryStore.appending(
+                        sample,
+                        to: quotaHistory[id] ?? [],
+                        now: historyNow
+                    )
+                    didChangeHistory = true
+                }
             case .failure(let error):
                 errors[id] = error
             }
+        }
+
+        if didChangeHistory {
+            historyStore.save(quotaHistory)
         }
 
         WidgetSnapshot.push(providers: providers, balances: balances, displayNames: providerNames)
