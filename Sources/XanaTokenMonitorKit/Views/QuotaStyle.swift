@@ -14,36 +14,218 @@ enum PanelActions {
     static var showAddProvider = false
 }
 
-/// 按剩余额度百分比取色:剩余 100% 绿、75% 黄、20% 以下红,区间内用鲜艳锚点色做 RGB 线性过渡。
-enum QuotaPalette {
-    private static let green = (r: 50.0, g: 215.0, b: 75.0)
-    private static let yellow = (r: 255.0, g: 214.0, b: 10.0)
-    private static let red = (r: 255.0, g: 69.0, b: 58.0)
+/// 每套主题同时定义额度色与空槽色，避免冷色填充和统一灰底混在一起。
+enum QuotaColorTheme: String, CaseIterable, Identifiable {
+    static let storageKey = "quotaColorTheme"
 
-    static func rgb(remainingPercent: Double) -> (r: Double, g: Double, b: Double) {
-        let remaining = min(100, max(0, remainingPercent))
-        switch remaining {
-        case 75...100:
-            return lerp(green, yellow, (100 - remaining) / 25)
-        case 20..<75:
-            return lerp(yellow, red, (75 - remaining) / 55)
-        default:
-            return red
+    case classic
+    case minimal
+    case calm
+    case cyber
+    case arctic
+    case cream
+    case ocean
+    case sunset
+    case forest
+    case morandi
+
+    var id: Self { self }
+
+    var name: String {
+        switch self {
+        case .classic: return "默认"
+        case .minimal: return "极简"
+        case .calm: return "宁静"
+        case .cyber: return "赛博"
+        case .arctic: return "极光"
+        case .cream: return "奶油"
+        case .ocean: return "深海"
+        case .sunset: return "落日"
+        case .forest: return "森林"
+        case .morandi: return "莫兰迪"
         }
     }
 
-    static func remainingColor(remainingPercent: Double) -> Color {
-        let c = rgb(remainingPercent: remainingPercent)
+    var description: String {
+        switch self {
+        case .classic: return "清晰的状态色"
+        case .minimal: return "克制的石墨灰"
+        case .calm: return "柔和的冷色调"
+        case .cyber: return "明亮的霓虹色"
+        case .arctic: return "冰川与北境极光"
+        case .cream: return "温柔的甜点粉彩"
+        case .ocean: return "青绿到靛蓝渐变"
+        case .sunset: return "金黄、橙与玫红"
+        case .forest: return "苔绿、麦穗与赤土"
+        case .morandi: return "低饱和自然色"
+        }
+    }
+
+    static var selected: QuotaColorTheme {
+        let rawValue = UserDefaults.standard.string(forKey: storageKey)
+        return rawValue.flatMap(QuotaColorTheme.init(rawValue:)) ?? .classic
+    }
+}
+
+enum QuotaPalette {
+    typealias RGB = (r: Double, g: Double, b: Double)
+
+    private struct Definition {
+        let high: RGB
+        let middle: RGB
+        let low: RGB
+        let trackLight: RGB
+        let trackDark: RGB
+    }
+
+    static func rgb(
+        remainingPercent: Double,
+        theme: QuotaColorTheme = .selected
+    ) -> (r: Double, g: Double, b: Double) {
+        let colors = anchors(for: theme)
+        let remaining = min(100, max(0, remainingPercent))
+        switch remaining {
+        case 75...100:
+            return lerp(colors.high, colors.middle, (100 - remaining) / 25)
+        case 20..<75:
+            return lerp(colors.middle, colors.low, (75 - remaining) / 55)
+        default:
+            return colors.low
+        }
+    }
+
+    static func remainingColor(
+        remainingPercent: Double,
+        theme: QuotaColorTheme = .selected
+    ) -> Color {
+        let c = rgb(remainingPercent: remainingPercent, theme: theme)
+        return Color(red: c.r / 255, green: c.g / 255, blue: c.b / 255)
+    }
+
+    static func trackRGB(
+        theme: QuotaColorTheme = .selected,
+        darkAppearance: Bool
+    ) -> RGB {
+        let colors = definition(for: theme)
+        return darkAppearance ? colors.trackDark : colors.trackLight
+    }
+
+    static func trackColor(
+        theme: QuotaColorTheme = .selected,
+        colorScheme: ColorScheme
+    ) -> Color {
+        let c = trackRGB(theme: theme, darkAppearance: colorScheme == .dark)
         return Color(red: c.r / 255, green: c.g / 255, blue: c.b / 255)
     }
 
     /// 与 remainingColor 同色的十六进制值(供 Widget 等跨进程读取)。
-    static func hexString(remainingPercent: Double) -> String {
-        let c = rgb(remainingPercent: remainingPercent)
+    static func hexString(
+        remainingPercent: Double,
+        theme: QuotaColorTheme = .selected
+    ) -> String {
+        let c = rgb(remainingPercent: remainingPercent, theme: theme)
         return String(format: "#%02X%02X%02X", Int(c.r.rounded()), Int(c.g.rounded()), Int(c.b.rounded()))
     }
 
-    private static func lerp(_ a: (r: Double, g: Double, b: Double), _ b: (r: Double, g: Double, b: Double), _ t: Double) -> (r: Double, g: Double, b: Double) {
+    static func trackHexString(
+        theme: QuotaColorTheme = .selected,
+        darkAppearance: Bool
+    ) -> String {
+        let c = trackRGB(theme: theme, darkAppearance: darkAppearance)
+        return String(format: "#%02X%02X%02X", Int(c.r.rounded()), Int(c.g.rounded()), Int(c.b.rounded()))
+    }
+
+    private static func anchors(for theme: QuotaColorTheme) -> (high: RGB, middle: RGB, low: RGB) {
+        let colors = definition(for: theme)
+        return (colors.high, colors.middle, colors.low)
+    }
+
+    private static func definition(for theme: QuotaColorTheme) -> Definition {
+        switch theme {
+        case .classic:
+            return Definition(
+                high: (50, 215, 75),
+                middle: (255, 214, 10),
+                low: (255, 69, 58),
+                trackLight: (231, 232, 235),
+                trackDark: (56, 58, 64)
+            )
+        case .minimal:
+            return Definition(
+                high: (174, 183, 192),
+                middle: (113, 123, 133),
+                low: (61, 68, 75),
+                trackLight: (236, 239, 241),
+                trackDark: (37, 40, 44)
+            )
+        case .calm:
+            return Definition(
+                high: (91, 200, 184),
+                middle: (100, 164, 218),
+                low: (125, 117, 189),
+                trackLight: (231, 236, 242),
+                trackDark: (39, 50, 63)
+            )
+        case .cyber:
+            return Definition(
+                high: (0, 245, 212),
+                middle: (122, 92, 255),
+                low: (255, 43, 214),
+                trackLight: (239, 232, 247),
+                trackDark: (38, 29, 53)
+            )
+        case .arctic:
+            return Definition(
+                high: (163, 190, 140),
+                middle: (136, 192, 208),
+                low: (191, 97, 106),
+                trackLight: (229, 233, 240),
+                trackDark: (52, 59, 73)
+            )
+        case .cream:
+            return Definition(
+                high: (166, 209, 137),
+                middle: (229, 200, 144),
+                low: (231, 130, 132),
+                trackLight: (239, 230, 226),
+                trackDark: (54, 50, 63)
+            )
+        case .ocean:
+            return Definition(
+                high: (20, 184, 166),
+                middle: (14, 165, 233),
+                low: (79, 70, 229),
+                trackLight: (224, 240, 242),
+                trackDark: (25, 55, 64)
+            )
+        case .sunset:
+            return Definition(
+                high: (250, 204, 21),
+                middle: (251, 146, 60),
+                low: (225, 29, 72),
+                trackLight: (245, 224, 218),
+                trackDark: (74, 47, 52)
+            )
+        case .forest:
+            return Definition(
+                high: (77, 124, 15),
+                middle: (202, 138, 4),
+                low: (154, 52, 18),
+                trackLight: (228, 235, 225),
+                trackDark: (38, 58, 46)
+            )
+        case .morandi:
+            return Definition(
+                high: (122, 151, 132),
+                middle: (184, 165, 140),
+                low: (176, 121, 121),
+                trackLight: (235, 229, 226),
+                trackDark: (63, 56, 60)
+            )
+        }
+    }
+
+    private static func lerp(_ a: RGB, _ b: RGB, _ t: Double) -> RGB {
         (a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t)
     }
 }
@@ -55,15 +237,27 @@ struct QuotaBar: View {
     /// 按额度日分配后的可用下限(0...1),画一根细竖线标记
     var marker: Double? = nil
     var animatesChanges = true
+    var themeOverride: QuotaColorTheme?
+    @AppStorage(QuotaColorTheme.storageKey) private var selectedThemeRawValue = QuotaColorTheme.classic.rawValue
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.secondary.opacity(0.2))
+                    .fill(QuotaPalette.trackColor(
+                        theme: resolvedTheme,
+                        colorScheme: colorScheme
+                    ))
 
                 Capsule()
-                    .fill(QuotaPalette.remainingColor(remainingPercent: remainingPercent))
+                    .stroke(Color.primary.opacity(0.18), lineWidth: 0.5)
+
+                Capsule()
+                    .fill(QuotaPalette.remainingColor(
+                        remainingPercent: remainingPercent,
+                        theme: resolvedTheme
+                    ))
                     .frame(width: fillWidth(total: proxy.size.width))
 
                 if let marker {
@@ -76,6 +270,10 @@ struct QuotaBar: View {
         }
         .frame(height: height)
         .animation(animatesChanges ? .easeInOut(duration: 0.25) : nil, value: remainingPercent)
+    }
+
+    private var resolvedTheme: QuotaColorTheme {
+        themeOverride ?? QuotaColorTheme(rawValue: selectedThemeRawValue) ?? .classic
     }
 
     private func fillWidth(total: CGFloat) -> CGFloat {

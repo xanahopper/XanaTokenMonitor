@@ -2,6 +2,72 @@ import XCTest
 @testable import XanaTokenMonitorKit
 
 final class XanaTokenMonitorKitTests: XCTestCase {
+    func testAPIKeyArchiveCombinesProvidersAndOmitsBlankValues() throws {
+        let firstID = try XCTUnwrap(UUID(uuidString: "3FD8AF88-E380-40B7-A819-7743846342C1"))
+        let secondID = try XCTUnwrap(UUID(uuidString: "D13032D0-917A-407D-BB8B-F0731F58B600"))
+        let blankID = try XCTUnwrap(UUID(uuidString: "CAAC6702-E2B5-4179-B29E-10AFA76F5412"))
+
+        let data = try XCTUnwrap(APIKeyStore.encode([
+            firstID: "  first-key\n",
+            secondID: "second-key",
+            blankID: " \n\t"
+        ]))
+        let decoded = try APIKeyStore.decode(data)
+
+        XCTAssertEqual(decoded, [
+            firstID: "first-key",
+            secondID: "second-key"
+        ])
+        XCTAssertNil(try APIKeyStore.encode([blankID: "  "]))
+    }
+
+    func testQuotaColorThemesKeepClassicDefaultAndProvideDistinctPalettes() {
+        XCTAssertEqual(QuotaColorTheme.allCases.count, 10)
+        XCTAssertEqual(
+            QuotaPalette.hexString(remainingPercent: 100, theme: .classic),
+            "#32D74B"
+        )
+
+        let themeColors = Set(QuotaColorTheme.allCases.map {
+            QuotaPalette.hexString(remainingPercent: 60, theme: $0)
+        })
+        XCTAssertEqual(themeColors.count, QuotaColorTheme.allCases.count)
+    }
+
+    func testEveryQuotaThemeHasDistinctTracksWithVisibleFillContrast() {
+        let lightTracks = Set(QuotaColorTheme.allCases.map {
+            QuotaPalette.trackHexString(theme: $0, darkAppearance: false)
+        })
+        let darkTracks = Set(QuotaColorTheme.allCases.map {
+            QuotaPalette.trackHexString(theme: $0, darkAppearance: true)
+        })
+
+        XCTAssertEqual(lightTracks.count, QuotaColorTheme.allCases.count)
+        XCTAssertEqual(darkTracks.count, QuotaColorTheme.allCases.count)
+
+        for theme in QuotaColorTheme.allCases {
+            for darkAppearance in [false, true] {
+                let track = QuotaPalette.trackRGB(theme: theme, darkAppearance: darkAppearance)
+                for remainingPercent in [10.0, 60.0, 100.0] {
+                    let fill = QuotaPalette.rgb(
+                        remainingPercent: remainingPercent,
+                        theme: theme
+                    )
+                    let distance = sqrt(
+                        pow(fill.r - track.r, 2)
+                        + pow(fill.g - track.g, 2)
+                        + pow(fill.b - track.b, 2)
+                    )
+                    XCTAssertGreaterThan(
+                        distance,
+                        40,
+                        "\(theme.name) 的填充色和空槽色过于接近"
+                    )
+                }
+            }
+        }
+    }
+
     func testQuotaHistoryMergesRapidRefreshesAndDropsExpiredSamples() throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         let expired = try historySample(

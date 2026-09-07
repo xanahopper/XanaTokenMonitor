@@ -590,6 +590,7 @@ private struct QuotaHistorySparkline: View {
     let startDate: Date
     let endDate: Date
     @State private var hoverX: CGFloat?
+    @AppStorage(QuotaColorTheme.storageKey) private var selectedThemeRawValue = QuotaColorTheme.classic.rawValue
 
     var body: some View {
         GeometryReader { geometry in
@@ -606,7 +607,10 @@ private struct QuotaHistorySparkline: View {
                         let center = position(first, in: size)
                         context.fill(
                             Path(ellipseIn: CGRect(x: center.x - 2, y: center.y - 2, width: 4, height: 4)),
-                            with: .color(QuotaPalette.remainingColor(remainingPercent: first.1))
+                            with: .color(QuotaPalette.remainingColor(
+                                remainingPercent: first.1,
+                                theme: selectedTheme
+                            ))
                         )
                     } else {
                         var path = Path()
@@ -616,7 +620,10 @@ private struct QuotaHistorySparkline: View {
                         }
                         context.stroke(
                             path,
-                            with: .color(QuotaPalette.remainingColor(remainingPercent: last.1)),
+                            with: .color(QuotaPalette.remainingColor(
+                                remainingPercent: last.1,
+                                theme: selectedTheme
+                            )),
                             style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
                         )
                     }
@@ -641,7 +648,10 @@ private struct QuotaHistorySparkline: View {
                         context.fill(marker, with: .color(Color(nsColor: .controlBackgroundColor)))
                         context.stroke(
                             marker,
-                            with: .color(QuotaPalette.remainingColor(remainingPercent: selectedPoint.1)),
+                            with: .color(QuotaPalette.remainingColor(
+                                remainingPercent: selectedPoint.1,
+                                theme: selectedTheme
+                            )),
                             lineWidth: 1.5
                         )
                     }
@@ -684,6 +694,10 @@ private struct QuotaHistorySparkline: View {
             RoundedRectangle(cornerRadius: 4)
                 .stroke(Color.secondary.opacity(0.12), lineWidth: 0.5)
         )
+    }
+
+    private var selectedTheme: QuotaColorTheme {
+        QuotaColorTheme(rawValue: selectedThemeRawValue) ?? .classic
     }
 
     private func position(_ point: (Date, Double), in size: CGSize) -> CGPoint {

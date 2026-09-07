@@ -3,6 +3,31 @@ import SwiftUI
 struct ProviderListView: View {
     private let providerManager: ProviderManager
     @State private var showingAddProvider = false
+    @AppStorage(QuotaColorTheme.storageKey) private var quotaColorThemeRawValue = QuotaColorTheme.classic.rawValue
+    #if os(macOS)
+    @State private var selectedConfigurationTab = ConfigurationTab.providers
+
+    private enum ConfigurationTab: String, CaseIterable, Identifiable {
+        case providers
+        case colors
+
+        var id: Self { self }
+
+        var title: String {
+            switch self {
+            case .providers: return "模型提供商"
+            case .colors: return "配色方案"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .providers: return "server.rack"
+            case .colors: return "paintpalette"
+            }
+        }
+    }
+    #endif
 
     @MainActor
     init(providerManager: ProviderManager) {
@@ -62,9 +87,46 @@ struct ProviderListView: View {
         .task {
             providerManager.startPolling()
         }
+        .onChange(of: quotaColorThemeRawValue) { _, _ in
+            WidgetSnapshot.push(
+                providers: providerManager.providers,
+                balances: providerManager.balances,
+                displayNames: providerManager.providerNames
+            )
+        }
     }
 
     private var mainContent: some View {
+        #if os(macOS)
+        VStack(spacing: 0) {
+            Picker("配置分类", selection: $selectedConfigurationTab) {
+                ForEach(ConfigurationTab.allCases) { tab in
+                    Label(tab.title, systemImage: tab.icon)
+                        .tag(tab)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(width: 280)
+            .padding(.vertical, 9)
+
+            Divider()
+
+            switch selectedConfigurationTab {
+            case .providers:
+                if providerManager.providers.isEmpty {
+                    emptyStateView
+                } else {
+                    providerList
+                }
+            case .colors:
+                ScrollView {
+                    QuotaThemeSelector(selection: $quotaColorThemeRawValue)
+                        .padding(14)
+                }
+            }
+        }
+        #else
         Group {
             if providerManager.providers.isEmpty {
                 emptyStateView
@@ -72,6 +134,7 @@ struct ProviderListView: View {
                 providerList
             }
         }
+        #endif
     }
 
     /// 配置窗口的自绘顶栏(配合 hiddenTitleBar 使用)
@@ -163,6 +226,83 @@ struct ProviderListView: View {
         #endif
     }
 }
+
+#if os(macOS)
+private struct QuotaThemeSelector: View {
+    @Binding var selection: String
+
+    private let columns = Array(
+        repeating: GridItem(.flexible(minimum: 104), spacing: 7),
+        count: 4
+    )
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("额度配色")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("应用于菜单栏、详情与小组件")
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary)
+            }
+
+            LazyVGrid(columns: columns, spacing: 7) {
+                ForEach(QuotaColorTheme.allCases) { theme in
+                    Button {
+                        selection = theme.rawValue
+                    } label: {
+                        VStack(alignment: .leading, spacing: 5) {
+                            HStack(spacing: 4) {
+                                Text(theme.name)
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                Spacer(minLength: 2)
+                                if selection == theme.rawValue {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.accentColor)
+                                }
+                            }
+
+                            HStack(spacing: 3) {
+                                ForEach([100.0, 60.0, 10.0], id: \.self) { remaining in
+                                    QuotaBar(
+                                        remainingPercent: remaining,
+                                        height: 5,
+                                        animatesChanges: false,
+                                        themeOverride: theme
+                                    )
+                                }
+                            }
+
+                            Text(theme.description)
+                                .font(.system(size: 8))
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                        .padding(7)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 7)
+                                .fill(selection == theme.rawValue
+                                    ? Color.accentColor.opacity(0.09)
+                                    : Color.secondary.opacity(0.06))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 7)
+                                .stroke(selection == theme.rawValue
+                                    ? Color.accentColor.opacity(0.65)
+                                    : Color.secondary.opacity(0.14), lineWidth: 0.75)
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+}
+#endif
 
 /// macOS 配置窗口的行:品牌图标 + 名称(可改名)+ 类型 + 删除按钮,不展示额度数据。
 struct ProviderConfigRow: View {
@@ -598,6 +738,9 @@ struct AddProviderView: View {
     }
     
     var body: some View {
+        #if os(macOS)
+        macOSBody
+        #else
         NavigationStack {
             Form {
                 // Account Name Section
@@ -749,19 +892,10 @@ struct AddProviderView: View {
                     }
                 }
                 
-                // Add Button Section
-                #if !os(macOS)
                 Section {
                     addProviderButton
                 }
-                #endif
             }
-            #if os(macOS)
-            .formStyle(.grouped)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                macOSActionBar
-            }
-            #endif
             .navigationTitle("Add Provider")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -781,10 +915,171 @@ struct AddProviderView: View {
                 Text(errorMessage)
             }
         }
-        #if os(macOS)
-        .frame(minWidth: 560, idealWidth: 640, minHeight: 560, idealHeight: 660)
         #endif
     }
+
+    #if os(macOS)
+    private var macOSBody: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Group {
+                    if let brandAsset = providerType.brandAsset,
+                       let brand = ProviderIcon.brandImage(named: brandAsset) {
+                        brand.resizable().scaledToFit()
+                    } else {
+                        Image(systemName: providerType.icon)
+                            .foregroundColor(providerType.color)
+                    }
+                }
+                .frame(width: 26, height: 26)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("添加模型提供商")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(providerType.description)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .semibold))
+                        .frame(width: 22, height: 22)
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut(.cancelAction)
+                .help("取消")
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(.bar)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 14) {
+                Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 12) {
+                    GridRow {
+                        macOSFieldLabel("提供商")
+
+                        Picker("提供商", selection: $providerType) {
+                            ForEach(ProviderType.availableCases, id: \.self) { type in
+                                Text(type.rawValue).tag(type)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 272)
+                    }
+
+                    GridRow {
+                        macOSFieldLabel("账户名称")
+
+                        TextField("可选，用于区分多个账户", text: $providerName)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 272)
+                    }
+
+                    GridRow {
+                        macOSFieldLabel("认证")
+
+                        if providerType == .codex {
+                            Label("使用这台 Mac 上的 Codex 登录", systemImage: "checkmark.shield.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 272, alignment: .leading)
+                        } else {
+                            HStack(spacing: 6) {
+                                Group {
+                                    if isKeyVisible {
+                                        TextField("API Key", text: $apiKey)
+                                            .textContentType(.password)
+                                    } else {
+                                        SecureField("API Key", text: $apiKey)
+                                    }
+                                }
+                                .textFieldStyle(.roundedBorder)
+
+                                Button {
+                                    isKeyVisible.toggle()
+                                } label: {
+                                    Image(systemName: isKeyVisible ? "eye.slash" : "eye")
+                                        .frame(width: 20, height: 20)
+                                }
+                                .buttonStyle(.plain)
+                                .help(isKeyVisible ? "隐藏 API Key" : "显示 API Key")
+                            }
+                            .frame(width: 272)
+                        }
+                    }
+                }
+
+                providerGuidance
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 7)
+                            .fill(Color.secondary.opacity(0.07))
+                    )
+            }
+            .padding(16)
+
+            Divider()
+            macOSActionBar
+        }
+        .frame(width: 440)
+        .fixedSize(horizontal: false, vertical: true)
+        .alert("Error", isPresented: $showError) {
+            Button("OK") { }
+        } message: {
+            Text(errorMessage)
+        }
+    }
+
+    private func macOSFieldLabel(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(.secondary)
+            .frame(width: 74, alignment: .trailing)
+    }
+
+    @ViewBuilder
+    private var providerGuidance: some View {
+        switch providerType {
+        case .codex:
+            Text("无需 API Key。应用会读取 Codex CLI 管理的本机 ChatGPT 登录状态。")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        case .zhipuai:
+            HStack {
+                Text("使用 bigmodel.cn 的 API Key，凭据仅存入本机 Keychain。")
+                Spacer()
+                Link("获取 Key", destination: URL(string: "https://open.bigmodel.cn/usercenter/apikeys")!)
+            }
+            .font(.caption)
+        case .kimiCoding:
+            HStack {
+                Text("使用 Kimi Code 控制台的 Coding Plan API Key。")
+                Spacer()
+                Link("获取 Key", destination: URL(string: "https://www.kimi.com/code/console")!)
+            }
+            .font(.caption)
+        case .openAIAPI:
+            HStack {
+                Text("需要可读取组织用量的 OpenAI Admin API Key。")
+                Spacer()
+                Link("管理 Key", destination: URL(string: "https://platform.openai.com/settings/organization/admin-keys")!)
+            }
+            .font(.caption)
+        case .anthropic, .mimo:
+            Text("API Key 仅存入这台设备的 Keychain。")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+    #endif
 
     private var addProviderButton: some View {
         Button(action: addProvider) {
@@ -801,34 +1096,39 @@ struct AddProviderView: View {
             #endif
         }
         .buttonStyle(.borderedProminent)
+        #if os(macOS)
+        .controlSize(.regular)
+        #else
         .controlSize(.large)
+        #endif
         .disabled((providerType.requiresAPIKey && apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || isValidating)
     }
 
     #if os(macOS)
     private var macOSActionBar: some View {
         HStack(spacing: 12) {
-            Text("Select a provider and enter its credentials to continue.")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            if isValidating {
+                ProgressView()
+                    .controlSize(.small)
+                Text("正在验证提供商…")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
 
-            Spacer(minLength: 24)
+            Spacer()
 
-            Button("Cancel") {
+            Button("取消") {
                 dismiss()
             }
             .keyboardShortcut(.cancelAction)
-            .controlSize(.large)
+            .controlSize(.regular)
 
             addProviderButton
                 .keyboardShortcut(.defaultAction)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .background(.bar)
-        .overlay(alignment: .top) {
-            Divider()
-        }
     }
     #endif
     

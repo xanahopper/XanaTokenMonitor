@@ -10,6 +10,8 @@ struct WidgetProviderItem: Codable, Identifiable {
     let text: String
     let percent: Double?   // 剩余 0...1
     let color: String      // #RRGGBB
+    let trackLightColor: String?
+    let trackDarkColor: String?
     let asset: String?     // 品牌图标资源名(brand-*)
     let resetAbsolute: String?
     let resetIn: String?
@@ -124,8 +126,10 @@ struct ProviderTimelineProvider: AppIntentTimelineProvider {
             date: Date(),
             items: [
                 WidgetProviderItem(id: "1", name: "ZhipuAI", text: "96%", percent: 0.96, color: "#32D74B",
+                                   trackLightColor: "#E7E8EB", trackDarkColor: "#383A40",
                                    asset: nil, resetAbsolute: "15:49", resetIn: "2时18分"),
                 WidgetProviderItem(id: "2", name: "Kimi", text: "88%", percent: 0.88, color: "#FFD60A",
+                                   trackLightColor: "#E7E8EB", trackDarkColor: "#383A40",
                                    asset: nil, resetAbsolute: "9月8日 14:31", resetIn: "1天3时")
             ],
             timeText: "12:00"
@@ -187,7 +191,12 @@ struct TokenMonitorWidgetEntryView: View {
                         Spacer(minLength: 6)
 
                         if let percent = item.percent {
-                            MiniBar(percent: percent, color: WidgetStore.itemColor(item.color))
+                            MiniBar(
+                                percent: percent,
+                                color: WidgetStore.itemColor(item.color),
+                                trackLightColor: item.trackLightColor.map(WidgetStore.itemColor),
+                                trackDarkColor: item.trackDarkColor.map(WidgetStore.itemColor)
+                            )
                                 .frame(width: 52)
 
                             Text("\(Int((percent * 100).rounded()))%")
@@ -246,7 +255,12 @@ struct TokenMonitorWidgetEntryView: View {
                         .foregroundColor(.primary)
                         .monospacedDigit()
 
-                    MiniBar(percent: percent, color: WidgetStore.itemColor(item.color))
+                    MiniBar(
+                        percent: percent,
+                        color: WidgetStore.itemColor(item.color),
+                        trackLightColor: item.trackLightColor.map(WidgetStore.itemColor),
+                        trackDarkColor: item.trackDarkColor.map(WidgetStore.itemColor)
+                    )
                 } else {
                     Text(item.text)
                         .font(.title3)
@@ -286,18 +300,31 @@ struct TokenMonitorWidgetEntryView: View {
 struct MiniBar: View {
     let percent: Double
     let color: Color
+    let trackLightColor: Color?
+    let trackDarkColor: Color?
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.secondary.opacity(0.2))
+                    .fill(resolvedTrackColor)
+
+                Capsule()
+                    .stroke(Color.primary.opacity(0.18), lineWidth: 0.5)
 
                 Capsule()
                     .fill(color)
                     .frame(width: max(3, proxy.size.width * min(1, max(0, percent))))
             }
         }
+    }
+
+    private var resolvedTrackColor: Color {
+        if colorScheme == .dark {
+            return trackDarkColor ?? Color.secondary.opacity(0.2)
+        }
+        return trackLightColor ?? Color.secondary.opacity(0.2)
     }
 }
 

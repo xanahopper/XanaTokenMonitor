@@ -11,6 +11,8 @@ enum WidgetSnapshot {
         let text: String
         let percent: Double?   // 剩余 0...1,无百分比口径时为 nil
         let color: String      // #RRGGBB
+        let trackLightColor: String? // 亮色外观下的空槽色
+        let trackDarkColor: String?  // 暗色外观下的空槽色
         let asset: String?     // 品牌图标资源名(brand-*)
         let resetAbsolute: String? // 最近一次重置的绝对时间文案
         let resetIn: String?       // 距离该重置的倒计时文案
@@ -36,6 +38,8 @@ enum WidgetSnapshot {
                 text: QuotaDisplay.balanceText(balance),
                 percent: QuotaDisplay.worstRemainingPercent(balance).map { $0 / 100 },
                 color: QuotaPalette.hexString(remainingPercent: QuotaDisplay.worstRemainingPercent(balance) ?? 100),
+                trackLightColor: QuotaPalette.trackHexString(darkAppearance: false),
+                trackDarkColor: QuotaPalette.trackHexString(darkAppearance: true),
                 asset: ProviderIcon.brandAssetName(for: provider),
                 resetAbsolute: nextReset.map { QuotaDisplay.resetText($0.date, quotaName: $0.name) },
                 resetIn: nextReset.map { QuotaDisplay.countdownText($0.date) }

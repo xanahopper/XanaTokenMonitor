@@ -4,6 +4,7 @@ import XanaTokenMonitorKit
 @main
 struct XanaTokenMonitorMacOSApp: App {
     @State private var providerManager = ProviderManager()
+    @AppStorage(QuotaColorTheme.storageKey) private var quotaColorThemeRawValue = QuotaColorTheme.classic.rawValue
 
     var body: some Scene {
         WindowGroup {
@@ -31,7 +32,10 @@ struct XanaTokenMonitorMacOSApp: App {
             if quotaGroups.isEmpty {
                 Image(systemName: "gauge.with.needle")
             } else {
-                Image(nsImage: Self.statusBarImage(groups: quotaGroups))
+                Image(nsImage: Self.statusBarImage(
+                    groups: quotaGroups,
+                    theme: QuotaColorTheme(rawValue: quotaColorThemeRawValue) ?? .classic
+                ))
             }
         }
         .menuBarExtraStyle(.window)
@@ -39,7 +43,10 @@ struct XanaTokenMonitorMacOSApp: App {
 
     /// 状态栏图标:每个提供方一组竖条(每根对应一个配额周期,高度 = 剩余百分比),
     /// 组间用细分隔线隔开。
-    private static func statusBarImage(groups: [[(label: String, value: Double)]]) -> NSImage {
+    private static func statusBarImage(
+        groups: [[(label: String, value: Double)]],
+        theme: QuotaColorTheme
+    ) -> NSImage {
         let barWidth: CGFloat = 3.5
         let columnGap: CGFloat = 4 // 列间距(容纳标签小字)
         let groupGap: CGFloat = 9 // 组间距(含分隔线)
@@ -76,7 +83,20 @@ struct XanaTokenMonitorMacOSApp: App {
         // 延迟到 NSStatusBarButton 真正绘制时再解析语义色,才能匹配当前菜单栏。
         let image = NSImage(size: pointSize, flipped: false) { _ in
             let outlineColor = NSColor.labelColor.withAlphaComponent(0.75)
-            let trackColor = NSColor.labelColor.withAlphaComponent(0.25)
+            let resolvedLabel = NSColor.labelColor.usingColorSpace(.deviceRGB)
+            let labelBrightness = resolvedLabel.map {
+                ($0.redComponent + $0.greenComponent + $0.blueComponent) / 3
+            } ?? 0
+            let trackRGB = QuotaPalette.trackRGB(
+                theme: theme,
+                darkAppearance: labelBrightness > 0.5
+            )
+            let trackColor = NSColor(
+                red: trackRGB.r / 255,
+                green: trackRGB.g / 255,
+                blue: trackRGB.b / 255,
+                alpha: 1
+            )
             let dividerColor = NSColor.labelColor.withAlphaComponent(0.35)
             let textAttrs: [NSAttributedString.Key: Any] = [
                 .font: font,
@@ -111,7 +131,7 @@ struct XanaTokenMonitorMacOSApp: App {
                     trackColor.setFill()
                     track.fill()
 
-                    let rgb = QuotaPalette.rgb(remainingPercent: clamped)
+                    let rgb = QuotaPalette.rgb(remainingPercent: clamped, theme: theme)
                     NSColor(red: rgb.r / 255, green: rgb.g / 255, blue: rgb.b / 255, alpha: 1).setFill()
                     NSBezierPath(
                         roundedRect: NSRect(x: center - barWidth / 2, y: barBottom, width: barWidth, height: fillHeight),

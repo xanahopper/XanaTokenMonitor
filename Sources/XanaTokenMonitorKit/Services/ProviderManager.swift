@@ -4,6 +4,11 @@ import Security
 
 enum APIKeyStore {
     private static let service = "com.xana.XanaTokenMonitor.api-keys"
+    private static let bundleAccount = "provider-credentials-v1"
+
+    private struct CredentialArchive: Codable {
+        let keys: [String: String]
+    }
 
     enum StoreError: LocalizedError {
         case keychain(OSStatus)
@@ -19,15 +24,52 @@ enum APIKeyStore {
         }
     }
 
-    static func save(_ apiKey: String, for providerID: UUID) throws {
-        let normalizedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        if normalizedKey.isEmpty {
-            try delete(for: providerID)
+    static func save(_ apiKeys: [UUID: String]) throws {
+        guard let data = try encode(apiKeys) else {
+            try delete(account: bundleAccount)
             return
         }
 
-        let query = query(for: providerID)
-        let data = Data(normalizedKey.utf8)
+        try save(data, account: bundleAccount)
+    }
+
+    static func load() throws -> [UUID: String]? {
+        guard let data = try loadData(account: bundleAccount) else { return nil }
+        return try decode(data)
+    }
+
+    static func encode(_ apiKeys: [UUID: String]) throws -> Data? {
+        let normalizedKeys = Dictionary(uniqueKeysWithValues: apiKeys.compactMap { id, apiKey in
+            let normalizedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            return normalizedKey.isEmpty ? nil : (id.uuidString, normalizedKey)
+        })
+        guard !normalizedKeys.isEmpty else { return nil }
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        return try encoder.encode(CredentialArchive(keys: normalizedKeys))
+    }
+
+    static func decode(_ data: Data) throws -> [UUID: String] {
+        guard let archive = try? JSONDecoder().decode(CredentialArchive.self, from: data) else {
+            throw StoreError.invalidData
+        }
+        return Dictionary(uniqueKeysWithValues: archive.keys.compactMap { id, apiKey in
+            UUID(uuidString: id).map { ($0, apiKey) }
+        })
+    }
+
+    /// 读取合并存储之前按 Provider 分散保存的旧条目，仅用于一次性迁移。
+    static func loadLegacy(for providerID: UUID) throws -> String? {
+        guard let data = try loadData(account: providerID.uuidString),
+              let apiKey = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        return apiKey
+    }
+
+    private static func save(_ data: Data, account: String) throws {
+        let query = query(account: account)
         let updateStatus = SecItemUpdate(
             query as CFDictionary,
             [kSecValueData as String: data] as CFDictionary
@@ -45,9 +87,9 @@ enum APIKeyStore {
         }
     }
 
-    static func load(for providerID: UUID) throws -> String? {
+    private static func loadData(account: String) throws -> Data? {
         var result: CFTypeRef?
-        var lookup = query(for: providerID)
+        var lookup = query(account: account)
         lookup[kSecReturnData as String] = true
         lookup[kSecMatchLimit as String] = kSecMatchLimitOne
 
@@ -58,25 +100,24 @@ enum APIKeyStore {
         guard status == errSecSuccess else {
             throw StoreError.keychain(status)
         }
-        guard let data = result as? Data,
-              let apiKey = String(data: data, encoding: .utf8) else {
+        guard let data = result as? Data else {
             throw StoreError.invalidData
         }
-        return apiKey
+        return data
     }
 
-    static func delete(for providerID: UUID) throws {
-        let status = SecItemDelete(query(for: providerID) as CFDictionary)
+    private static func delete(account: String) throws {
+        let status = SecItemDelete(query(account: account) as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw StoreError.keychain(status)
         }
     }
 
-    private static func query(for providerID: UUID) -> [String: Any] {
+    private static func query(account: String) -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: providerID.uuidString
+            kSecAttrAccount as String: account
         ]
     }
 }
@@ -215,11 +256,6 @@ class ProviderManager {
         errors.removeValue(forKey: id)
         providerNames.removeValue(forKey: id)
         quotaHistory.removeValue(forKey: id)
-        do {
-            try APIKeyStore.delete(for: id)
-        } catch {
-            NSLog("ProviderManager: failed to delete API key from Keychain: %@", error.localizedDescription)
-        }
         saveProviders()
         historyStore.save(quotaHistory)
         WidgetSnapshot.push(providers: providers, balances: balances, displayNames: providerNames)
@@ -290,15 +326,17 @@ class ProviderManager {
     }
     
     private func saveProviders() {
-        for provider in providers {
-            do {
-                try APIKeyStore.save(provider.apiKey, for: provider.id)
-            } catch {
-                // Never fall back to persisting the key in UserDefaults.
-                NSLog("ProviderManager: failed to save API key to Keychain: %@", error.localizedDescription)
-            }
+        do {
+            try APIKeyStore.save(apiKeys(from: providers))
+        } catch {
+            // Never fall back to persisting the key in UserDefaults.
+            NSLog("ProviderManager: failed to save API keys to Keychain: %@", error.localizedDescription)
         }
 
+        persistProviderConfigurations()
+    }
+
+    private func persistProviderConfigurations() {
         if let encoded = try? JSONEncoder().encode(providers.map { AnyCodableProvider($0) }) {
             UserDefaults.standard.set(encoded, forKey: "savedProviders")
         }
@@ -312,27 +350,58 @@ class ProviderManager {
             return
         }
 
+        var bundledKeys: [UUID: String]
+        var canAttemptLegacyMigration = true
+        do {
+            bundledKeys = try APIKeyStore.load() ?? [:]
+        } catch {
+            bundledKeys = [:]
+            canAttemptLegacyMigration = false
+            NSLog("ProviderManager: failed to load API keys from Keychain: %@", error.localizedDescription)
+        }
+
         var needsRewrite = false
+        var needsCredentialBundleSave = false
         providers = decoded.map { storedProvider in
             var provider = storedProvider.provider
             let legacyKey = provider.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
 
+            guard requiresStoredAPIKey(provider) else {
+                provider.apiKey = ""
+                needsRewrite = needsRewrite || !legacyKey.isEmpty
+                return provider
+            }
+
+            if let bundledKey = bundledKeys[provider.id] {
+                provider.apiKey = bundledKey
+                needsRewrite = needsRewrite || !legacyKey.isEmpty
+                return provider
+            }
+
+            guard canAttemptLegacyMigration else {
+                provider.apiKey = ""
+                return provider
+            }
+
+            if !legacyKey.isEmpty {
+                provider.apiKey = legacyKey
+                bundledKeys[provider.id] = legacyKey
+                needsCredentialBundleSave = true
+                needsRewrite = true
+                return provider
+            }
+
             do {
-                if let keychainKey = try APIKeyStore.load(for: provider.id) {
+                if let keychainKey = try APIKeyStore.loadLegacy(for: provider.id) {
                     provider.apiKey = keychainKey
-                    needsRewrite = needsRewrite || !legacyKey.isEmpty
-                } else if !legacyKey.isEmpty {
-                    // Migrate credentials written by versions that used UserDefaults.
-                    try APIKeyStore.save(legacyKey, for: provider.id)
-                    provider.apiKey = legacyKey
-                    needsRewrite = true
+                    bundledKeys[provider.id] = keychainKey
+                    needsCredentialBundleSave = true
                 } else {
                     provider.apiKey = ""
                 }
             } catch {
-                // Keep the legacy value in memory for this session, but do not rewrite
-                // the preferences until the credential can be stored securely.
-                NSLog("ProviderManager: failed to migrate API key to Keychain: %@", error.localizedDescription)
+                provider.apiKey = ""
+                NSLog("ProviderManager: failed to load legacy API key from Keychain: %@", error.localizedDescription)
             }
 
             return provider
@@ -348,9 +417,29 @@ class ProviderManager {
             providerNames = names
         }
 
-        if needsRewrite {
-            saveProviders()
+        if needsCredentialBundleSave {
+            do {
+                try APIKeyStore.save(bundledKeys)
+            } catch {
+                NSLog("ProviderManager: failed to migrate API keys in Keychain: %@", error.localizedDescription)
+            }
         }
+
+        if needsRewrite {
+            persistProviderConfigurations()
+        }
+    }
+
+    private func apiKeys(from providers: [any ModelProvider]) -> [UUID: String] {
+        Dictionary(uniqueKeysWithValues: providers.compactMap { provider in
+            guard requiresStoredAPIKey(provider) else { return nil }
+            let apiKey = provider.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            return apiKey.isEmpty ? nil : (provider.id, apiKey)
+        })
+    }
+
+    private func requiresStoredAPIKey(_ provider: any ModelProvider) -> Bool {
+        !(provider is CodexProvider)
     }
 }
 
