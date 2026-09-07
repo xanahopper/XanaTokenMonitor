@@ -52,7 +52,7 @@ enum QuotaPalette {
 struct QuotaBar: View {
     let remainingPercent: Double
     var height: CGFloat = 5
-    /// 「按时间匀速使用」的期望位置(0...1),画一根细竖线标记
+    /// 按额度日分配后的可用下限(0...1),画一根细竖线标记
     var marker: Double? = nil
 
     var body: some View {
@@ -177,15 +177,40 @@ enum QuotaDisplay {
         }
     }
 
-    /// 「按时间匀速使用」时剩余应处的位置(0...1)。
-    /// 仅天级及以上的长窗口提供(周/7d),小时窗口不画刻度。
-    static func timeMarker(_ info: QuotaInfo, now: Date = Date()) -> Double? {
+    /// 按「额度日」均分后，当前已经可以使用到的剩余额度下限(0...1)。
+    ///
+    /// 长窗口以接口返回的重置时刻作为每天的额度边界。每到一个新额度日，
+    /// 一次性放出当天份额，随后保持不变直到次日同一时刻。例如周三 10:00
+    /// 重置的周额度，会在周二 10:00 把刻度降到 0，表示最后一天可以用完。
+    /// 小时窗口不画刻度。
+    static func timeMarker(
+        _ info: QuotaInfo,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Double? {
         guard let durationMins = info.durationMins, durationMins >= 1440,
               let resetDate = info.resetDate else { return nil }
-        let totalSeconds = durationMins * 60
-        let remainingTime = resetDate.timeIntervalSince(now)
-        guard totalSeconds > 0, remainingTime > 0 else { return nil }
-        return min(1, max(0, remainingTime / totalSeconds))
+        guard now < resetDate else { return nil }
+
+        let quotaDayCount = max(1, Int((durationMins / 1440).rounded()))
+        guard let periodStart = calendar.date(
+            byAdding: .day,
+            value: -quotaDayCount,
+            to: resetDate
+        ) else { return nil }
+        if now < periodStart { return 1 }
+
+        let remainingWholeDays = (1..<quotaDayCount).reduce(into: 0) { count, dayOffset in
+            guard let boundary = calendar.date(
+                byAdding: .day,
+                value: -dayOffset,
+                to: resetDate
+            ) else { return }
+            if boundary > now {
+                count += 1
+            }
+        }
+        return Double(remainingWholeDays) / Double(quotaDayCount)
     }
 
     /// 重置时间:周/天级窗口显示「X月X日 HH:mm」,小时级窗口只显示「HH:mm」,均为中文格式。

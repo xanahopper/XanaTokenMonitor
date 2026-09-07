@@ -2,6 +2,80 @@ import XCTest
 @testable import XanaTokenMonitorKit
 
 final class XanaTokenMonitorKitTests: XCTestCase {
+    func testWeeklyQuotaMarkerAllocatesOneWholeShareAtEachResetBoundary() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: 0))
+        let resetDate = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026,
+            month: 9,
+            day: 9,
+            hour: 10
+        )))
+        let quota = QuotaDisplay.QuotaInfo(
+            index: 0,
+            name: "周",
+            remainingPercent: 50,
+            resetDate: resetDate,
+            durationMins: 7 * 24 * 60
+        )
+
+        let mondayEvening = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026,
+            month: 9,
+            day: 7,
+            hour: 17
+        )))
+        let tuesdayBeforeBoundary = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026,
+            month: 9,
+            day: 8,
+            hour: 9
+        )))
+        let tuesdayAfterBoundary = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026,
+            month: 9,
+            day: 8,
+            hour: 10
+        )))
+
+        XCTAssertEqual(try XCTUnwrap(QuotaDisplay.timeMarker(quota, now: mondayEvening, calendar: calendar)), 1.0 / 7.0, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(QuotaDisplay.timeMarker(quota, now: tuesdayBeforeBoundary, calendar: calendar)), 1.0 / 7.0, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(QuotaDisplay.timeMarker(quota, now: tuesdayAfterBoundary, calendar: calendar)), 0, accuracy: 0.0001)
+    }
+
+    func testWeeklyQuotaMarkerAllocatesFirstDayAtPeriodStart() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: 0))
+        let resetDate = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026,
+            month: 9,
+            day: 9,
+            hour: 10
+        )))
+        let quota = QuotaDisplay.QuotaInfo(
+            index: 0,
+            name: "周",
+            remainingPercent: 50,
+            resetDate: resetDate,
+            durationMins: 7 * 24 * 60
+        )
+        let beforePeriod = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026,
+            month: 9,
+            day: 2,
+            hour: 9
+        )))
+        let periodStart = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026,
+            month: 9,
+            day: 2,
+            hour: 10
+        )))
+
+        XCTAssertEqual(try XCTUnwrap(QuotaDisplay.timeMarker(quota, now: beforePeriod, calendar: calendar)), 1, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(QuotaDisplay.timeMarker(quota, now: periodStart, calendar: calendar)), 6.0 / 7.0, accuracy: 0.0001)
+    }
+
     func testCodexUsageParsing() throws {
         let response = """
         {"id":0,"result":{"userAgent":"test"}}
