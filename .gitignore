@@ -1,9 +1,31 @@
+# macOS
 .DS_Store
-/.build
-/Packages
-xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode
 DerivedData/
-/DerivedDataWatchOS/
-.swiftpm/configuration/registries.json
-.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
-.netrc
+DerivedData*/
+build/
+*.xcuserstate
+*.xcuserdata/
+
+# Local release artifacts
+*.app/
+*.dmg
+*.pkg
+*.zip
+SHA256SUMS
+
+# Local secrets and signing material
+.env
+.env.*
+!.env.example
+auth.json
+*.p12
+*.p8
+*.cer
+*.mobileprovision

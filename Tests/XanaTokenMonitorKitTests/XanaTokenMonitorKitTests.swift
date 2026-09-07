@@ -143,6 +143,15 @@ final class XanaTokenMonitorKitTests: XCTestCase {
         XCTAssertEqual(codexProvider.apiKey, "")
     }
 
+    func testUnavailableProvidersDoNotReturnPlaceholderBalances() async {
+        await XCTAssertThrowsErrorAsync {
+            _ = try await AnthropicProvider(id: UUID(), apiKey: "fixture-key").fetchBalance()
+        }
+        await XCTAssertThrowsErrorAsync {
+            _ = try await MiMoProvider(id: UUID(), apiKey: "fixture-key").fetchBalance()
+        }
+    }
+
     #if os(macOS)
     func testCodexProviderFetchesLocalUsage() async throws {
         try XCTSkipUnless(ProcessInfo.processInfo.environment["RUN_CODEX_INTEGRATION_TEST"] == "1")
@@ -229,11 +238,14 @@ final class XanaTokenMonitorKitTests: XCTestCase {
     func testOpenAIProviderCodableRoundTrip() throws {
         let provider = OpenAIProvider(id: UUID(), apiKey: "admin-key")
         let encoded = try JSONEncoder().encode(AnyCodableProvider(provider))
+        let encodedText = try XCTUnwrap(String(data: encoded, encoding: .utf8))
         let decoded = try JSONDecoder().decode(AnyCodableProvider.self, from: encoded)
         let openAIProvider = try XCTUnwrap(decoded.provider as? OpenAIProvider)
 
+        XCTAssertFalse(encodedText.contains("admin-key"))
+        XCTAssertFalse(encodedText.contains("apiKey"))
         XCTAssertEqual(openAIProvider.id, provider.id)
-        XCTAssertEqual(openAIProvider.apiKey, provider.apiKey)
+        XCTAssertEqual(openAIProvider.apiKey, "")
         XCTAssertEqual(openAIProvider.baseURL, provider.baseURL)
     }
 
@@ -314,11 +326,14 @@ final class XanaTokenMonitorKitTests: XCTestCase {
     func testKimiCodingProviderCodableRoundTrip() throws {
         let provider = KimiCodingProvider(id: UUID(), apiKey: "test-key")
         let encoded = try JSONEncoder().encode(AnyCodableProvider(provider))
+        let encodedText = try XCTUnwrap(String(data: encoded, encoding: .utf8))
         let decoded = try JSONDecoder().decode(AnyCodableProvider.self, from: encoded)
         let kimiProvider = try XCTUnwrap(decoded.provider as? KimiCodingProvider)
         
+        XCTAssertFalse(encodedText.contains("test-key"))
+        XCTAssertFalse(encodedText.contains("apiKey"))
         XCTAssertEqual(kimiProvider.id, provider.id)
-        XCTAssertEqual(kimiProvider.apiKey, provider.apiKey)
+        XCTAssertEqual(kimiProvider.apiKey, "")
         XCTAssertEqual(kimiProvider.baseURL, provider.baseURL)
     }
 
@@ -398,5 +413,20 @@ final class XanaTokenMonitorKitTests: XCTestCase {
                 "quota_0_durationMins": "10080"
             ]
         )))
+    }
+}
+
+private extension XCTestCase {
+    func XCTAssertThrowsErrorAsync(
+        _ expression: @escaping () async throws -> Void,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async {
+        do {
+            try await expression()
+            XCTFail("Expected an error", file: file, line: line)
+        } catch {
+            // Expected.
+        }
     }
 }

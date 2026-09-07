@@ -586,9 +586,9 @@ struct AddProviderView: View {
 
         static var availableCases: [ProviderType] {
             #if os(macOS)
-            return allCases
+            return allCases.filter { $0 != .anthropic && $0 != .mimo }
             #else
-            return allCases.filter { $0 != .codex }
+            return allCases.filter { $0 != .codex && $0 != .anthropic && $0 != .mimo }
             #endif
         }
 
@@ -734,7 +734,7 @@ struct AddProviderView: View {
                 } header: {
                     Text("Authentication")
                 } footer: {
-                    Text(providerType == .codex ? "Requires Codex CLI signed in with ChatGPT on this Mac." : "Your API key is stored on this device.")
+                    Text(providerType == .codex ? "Requires Codex CLI signed in with ChatGPT on this Mac." : "Your API key is stored in this device's Keychain.")
                 }
                 
                 // Validation Status Section

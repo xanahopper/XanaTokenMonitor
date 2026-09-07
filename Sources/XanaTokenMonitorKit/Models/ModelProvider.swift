@@ -1,6 +1,6 @@
 import Foundation
 
-protocol ModelProvider: Identifiable, Codable, Sendable {
+protocol ModelProvider: Identifiable, Sendable {
     var id: UUID { get }
     var name: String { get }
     var apiKey: String { get set }
@@ -576,6 +576,17 @@ enum OpenAIProviderError: LocalizedError {
     }
 }
 
+enum ProviderIntegrationError: LocalizedError {
+    case unavailable(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .unavailable(let provider):
+            return provider + " quota monitoring is not available in this release."
+        }
+    }
+}
+
 private struct OpenAIUsageResponse: Decodable {
     let data: [OpenAIUsageBucket]
     let hasMore: Bool
@@ -641,8 +652,7 @@ struct AnthropicProvider: ModelProvider {
     var baseURL: String = "https://api.anthropic.com"
     
     func fetchBalance() async throws -> Balance {
-        // 实际实现会调用 Anthropic API
-        return Balance(amount: 50.0, currency: "USD", timestamp: Date())
+        throw ProviderIntegrationError.unavailable(name)
     }
 }
 
@@ -1059,9 +1069,7 @@ struct MiMoProvider: ModelProvider {
     var baseURL: String = "https://api.xiaomimimo.com/v1"
     
     func fetchBalance() async throws -> Balance {
-        // 小米MiMo没有公开的余额查询API，返回模拟数据
-        // 实际应用中可能需要通过其他方式获取余额信息
-        return Balance(amount: 1000.0, currency: "tokens", timestamp: Date())
+        throw ProviderIntegrationError.unavailable(name)
     }
 }
 

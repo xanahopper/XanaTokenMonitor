@@ -1,5 +1,85 @@
 import Foundation
 import Combine
+import Security
+
+enum APIKeyStore {
+    private static let service = "com.xana.XanaTokenMonitor.api-keys"
+
+    enum StoreError: LocalizedError {
+        case keychain(OSStatus)
+        case invalidData
+
+        var errorDescription: String? {
+            switch self {
+            case .keychain(let status):
+                return "Keychain operation failed (status \(status))."
+            case .invalidData:
+                return "The stored API key could not be decoded."
+            }
+        }
+    }
+
+    static func save(_ apiKey: String, for providerID: UUID) throws {
+        let normalizedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if normalizedKey.isEmpty {
+            try delete(for: providerID)
+            return
+        }
+
+        let query = query(for: providerID)
+        let data = Data(normalizedKey.utf8)
+        let updateStatus = SecItemUpdate(
+            query as CFDictionary,
+            [kSecValueData as String: data] as CFDictionary
+        )
+
+        if updateStatus == errSecItemNotFound {
+            var item = query
+            item[kSecValueData as String] = data
+            let addStatus = SecItemAdd(item as CFDictionary, nil)
+            guard addStatus == errSecSuccess else {
+                throw StoreError.keychain(addStatus)
+            }
+        } else if updateStatus != errSecSuccess {
+            throw StoreError.keychain(updateStatus)
+        }
+    }
+
+    static func load(for providerID: UUID) throws -> String? {
+        var result: CFTypeRef?
+        var lookup = query(for: providerID)
+        lookup[kSecReturnData as String] = true
+        lookup[kSecMatchLimit as String] = kSecMatchLimitOne
+
+        let status = SecItemCopyMatching(lookup as CFDictionary, &result)
+        if status == errSecItemNotFound {
+            return nil
+        }
+        guard status == errSecSuccess else {
+            throw StoreError.keychain(status)
+        }
+        guard let data = result as? Data,
+              let apiKey = String(data: data, encoding: .utf8) else {
+            throw StoreError.invalidData
+        }
+        return apiKey
+    }
+
+    static func delete(for providerID: UUID) throws {
+        let status = SecItemDelete(query(for: providerID) as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw StoreError.keychain(status)
+        }
+    }
+
+    private static func query(for providerID: UUID) -> [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: providerID.uuidString
+        ]
+    }
+}
 
 struct QuotaHistoryValue: Codable, Sendable, Equatable, Identifiable {
     let index: Int
@@ -135,6 +215,11 @@ class ProviderManager {
         errors.removeValue(forKey: id)
         providerNames.removeValue(forKey: id)
         quotaHistory.removeValue(forKey: id)
+        do {
+            try APIKeyStore.delete(for: id)
+        } catch {
+            NSLog("ProviderManager: failed to delete API key from Keychain: %@", error.localizedDescription)
+        }
         saveProviders()
         historyStore.save(quotaHistory)
         WidgetSnapshot.push(providers: providers, balances: balances, displayNames: providerNames)
@@ -205,6 +290,15 @@ class ProviderManager {
     }
     
     private func saveProviders() {
+        for provider in providers {
+            do {
+                try APIKeyStore.save(provider.apiKey, for: provider.id)
+            } catch {
+                // Never fall back to persisting the key in UserDefaults.
+                NSLog("ProviderManager: failed to save API key to Keychain: %@", error.localizedDescription)
+            }
+        }
+
         if let encoded = try? JSONEncoder().encode(providers.map { AnyCodableProvider($0) }) {
             UserDefaults.standard.set(encoded, forKey: "savedProviders")
         }
@@ -217,7 +311,32 @@ class ProviderManager {
               let decoded = try? JSONDecoder().decode([AnyCodableProvider].self, from: data) else {
             return
         }
-        providers = decoded.map { $0.provider }
+
+        var needsRewrite = false
+        providers = decoded.map { storedProvider in
+            var provider = storedProvider.provider
+            let legacyKey = provider.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            do {
+                if let keychainKey = try APIKeyStore.load(for: provider.id) {
+                    provider.apiKey = keychainKey
+                    needsRewrite = needsRewrite || !legacyKey.isEmpty
+                } else if !legacyKey.isEmpty {
+                    // Migrate credentials written by versions that used UserDefaults.
+                    try APIKeyStore.save(legacyKey, for: provider.id)
+                    provider.apiKey = legacyKey
+                    needsRewrite = true
+                } else {
+                    provider.apiKey = ""
+                }
+            } catch {
+                // Keep the legacy value in memory for this session, but do not rewrite
+                // the preferences until the credential can be stored securely.
+                NSLog("ProviderManager: failed to migrate API key to Keychain: %@", error.localizedDescription)
+            }
+
+            return provider
+        }
 
         if let storedNames = UserDefaults.standard.dictionary(forKey: "providerNames") as? [String: String] {
             var names: [UUID: String] = [:]
@@ -228,6 +347,45 @@ class ProviderManager {
             }
             providerNames = names
         }
+
+        if needsRewrite {
+            saveProviders()
+        }
+    }
+}
+
+private struct StoredProviderConfiguration: Codable {
+    let id: UUID
+    let name: String
+    let baseURL: String
+    let legacyAPIKey: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, baseURL, apiKey
+    }
+
+    init(id: UUID, name: String, baseURL: String, legacyAPIKey: String? = nil) {
+        self.id = id
+        self.name = name
+        self.baseURL = baseURL
+        self.legacyAPIKey = legacyAPIKey
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        baseURL = try container.decode(String.self, forKey: .baseURL)
+        // Read this only to migrate configurations created before Keychain storage.
+        legacyAPIKey = try container.decodeIfPresent(String.self, forKey: .apiKey)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(baseURL, forKey: .baseURL)
+        // Deliberately omit apiKey. Credentials belong in Keychain only.
     }
 }
 
@@ -244,20 +402,33 @@ struct AnyCodableProvider: Codable {
     
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
+        let type: String
         if provider is CodexProvider {
-            try container.encode("codex", forKey: .type)
+            type = "codex"
         } else if provider is OpenAIProvider {
-            try container.encode("openai", forKey: .type)
+            type = "openai"
         } else if provider is AnthropicProvider {
-            try container.encode("anthropic", forKey: .type)
+            type = "anthropic"
         } else if provider is KimiCodingProvider {
-            try container.encode("kimi-coding", forKey: .type)
+            type = "kimi-coding"
         } else if provider is ZhipuAIProvider {
-            try container.encode("zhipuai", forKey: .type)
+            type = "zhipuai"
         } else if provider is MiMoProvider {
-            try container.encode("mimo", forKey: .type)
+            type = "mimo"
+        } else {
+            throw EncodingError.invalidValue(
+                provider,
+                EncodingError.Context(codingPath: encoder.codingPath, debugDescription: "Unknown provider type")
+            )
         }
-        let data = try JSONEncoder().encode(provider)
+
+        try container.encode(type, forKey: .type)
+        let configuration = StoredProviderConfiguration(
+            id: provider.id,
+            name: provider.name,
+            baseURL: provider.baseURL
+        )
+        let data = try JSONEncoder().encode(configuration)
         try container.encode(data, forKey: .data)
     }
     
@@ -265,20 +436,22 @@ struct AnyCodableProvider: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let type = try container.decode(String.self, forKey: .type)
         let data = try container.decode(Data.self, forKey: .data)
+        let configuration = try JSONDecoder().decode(StoredProviderConfiguration.self, from: data)
+        let apiKey = configuration.legacyAPIKey ?? ""
         
         switch type {
         case "codex":
-            provider = try JSONDecoder().decode(CodexProvider.self, from: data)
+            provider = CodexProvider(id: configuration.id, name: configuration.name, apiKey: apiKey, baseURL: configuration.baseURL)
         case "openai":
-            provider = try JSONDecoder().decode(OpenAIProvider.self, from: data)
+            provider = OpenAIProvider(id: configuration.id, name: configuration.name, apiKey: apiKey, baseURL: configuration.baseURL)
         case "anthropic":
-            provider = try JSONDecoder().decode(AnthropicProvider.self, from: data)
+            provider = AnthropicProvider(id: configuration.id, name: configuration.name, apiKey: apiKey, baseURL: configuration.baseURL)
         case "kimi-coding":
-            provider = try JSONDecoder().decode(KimiCodingProvider.self, from: data)
+            provider = KimiCodingProvider(id: configuration.id, name: configuration.name, apiKey: apiKey, baseURL: configuration.baseURL)
         case "zhipuai":
-            provider = try JSONDecoder().decode(ZhipuAIProvider.self, from: data)
+            provider = ZhipuAIProvider(id: configuration.id, name: configuration.name, apiKey: apiKey, baseURL: configuration.baseURL)
         case "mimo":
-            provider = try JSONDecoder().decode(MiMoProvider.self, from: data)
+            provider = MiMoProvider(id: configuration.id, name: configuration.name, apiKey: apiKey, baseURL: configuration.baseURL)
         default:
             throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown provider type")
         }
