@@ -104,7 +104,7 @@ struct MenuBarQuotaPanel: View {
                     MainWindowOpener.open()
                 }
                 Spacer()
-                controlButton("arrow.clockwise", help: "刷新全部") {
+                refreshButton {
                     Task { await providerManager.fetchAllBalances() }
                 }
                 Spacer()
@@ -133,7 +133,7 @@ struct MenuBarQuotaPanel: View {
             }
         )
         .task {
-            if providerManager.balances.isEmpty {
+            if providerManager.shouldRefreshBalances() {
                 await providerManager.fetchAllBalances()
             }
         }
@@ -182,6 +182,20 @@ struct MenuBarQuotaPanel: View {
                     .foregroundColor(.primary)
                     .lineLimit(1)
 
+                Spacer(minLength: 4)
+
+                if providerManager.refreshingProviderIDs.contains(provider.id) {
+                    ProgressView()
+                        .controlSize(.small)
+                        .scaleEffect(0.55)
+                        .frame(width: 12, height: 12)
+                        .help("正在刷新")
+                } else if let error {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 9))
+                        .foregroundColor(.orange)
+                        .help("刷新失败：\(error.localizedDescription)")
+                }
             }
             .padding(.bottom, 1)
 
@@ -441,6 +455,32 @@ struct MenuBarQuotaPanel: View {
         }
         .buttonStyle(.plain)
         .help(help)
+    }
+
+    private func refreshButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            RefreshFeedbackIcon(
+                isRefreshing: providerManager.isRefreshing,
+                result: providerManager.lastRefreshResult,
+                size: 10
+            )
+            .frame(width: 38, height: 20)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .allowsHitTesting(!providerManager.isRefreshing)
+        .help(refreshHelp)
+        .accessibilityLabel(refreshHelp)
+    }
+
+    private var refreshHelp: String {
+        if providerManager.isRefreshing { return "正在刷新全部提供方" }
+        switch providerManager.lastRefreshResult {
+        case .none: return "刷新全部"
+        case .success: return "刷新完成"
+        case .partialFailure: return "部分提供方刷新失败"
+        case .failure: return "刷新失败"
+        }
     }
 }
 

@@ -14,6 +14,40 @@ enum PanelActions {
     static var showAddProvider = false
 }
 
+struct RefreshFeedbackIcon: View {
+    let isRefreshing: Bool
+    let result: BalanceRefreshResult
+    var size: CGFloat = 11
+
+    var body: some View {
+        Group {
+            if isRefreshing {
+                ProgressView()
+                    .controlSize(.small)
+                    .scaleEffect(0.6)
+            } else {
+                switch result {
+                case .none:
+                    Image(systemName: "arrow.clockwise")
+                        .foregroundColor(.primary)
+                case .success:
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                case .partialFailure:
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                case .failure:
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .foregroundColor(.red)
+                }
+            }
+        }
+        .font(.system(size: size, weight: .medium))
+        .animation(.easeInOut(duration: 0.15), value: isRefreshing)
+        .animation(.easeInOut(duration: 0.15), value: result)
+    }
+}
+
 /// 每套主题同时定义额度色与空槽色，避免冷色填充和统一灰底混在一起。
 enum QuotaColorTheme: String, CaseIterable, Identifiable {
     static let storageKey = "quotaColorTheme"

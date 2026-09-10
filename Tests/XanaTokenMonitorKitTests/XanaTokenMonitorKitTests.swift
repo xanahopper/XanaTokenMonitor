@@ -94,6 +94,62 @@ final class XanaTokenMonitorKitTests: XCTestCase {
         XCTAssertEqual(result[0].timestamp, rapidRefresh.timestamp)
     }
 
+    @MainActor
+    func testRefreshReportsPartialFailureAndKeepsStaleBalance() async {
+        let successfulID = UUID()
+        let failedID = UUID()
+        let staleBalance = Balance(
+            amount: 42,
+            currency: "tokens",
+            timestamp: Date(timeIntervalSince1970: 1_700_000_000)
+        )
+        let refreshedBalance = Balance(
+            amount: 84,
+            currency: "tokens",
+            timestamp: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+        let manager = ProviderManager(historyStore: temporaryHistoryStore())
+        manager.providers = [
+            RefreshStubProvider(id: successfulID, balance: refreshedBalance),
+            RefreshStubProvider(id: failedID, shouldFail: true)
+        ]
+        manager.balances[failedID] = staleBalance
+
+        await manager.fetchAllBalances()
+
+        XCTAssertFalse(manager.isRefreshing)
+        XCTAssertTrue(manager.refreshingProviderIDs.isEmpty)
+        XCTAssertEqual(manager.lastRefreshResult, .partialFailure)
+        XCTAssertEqual(manager.balances[successfulID]?.amount, 84)
+        XCTAssertEqual(manager.balances[failedID]?.timestamp, staleBalance.timestamp)
+        XCTAssertNotNil(manager.errors[failedID])
+        XCTAssertNotNil(manager.lastRefreshCompletedAt)
+    }
+
+    @MainActor
+    func testShouldRefreshBalancesWhenDataIsMissingOrStale() {
+        let providerID = UUID()
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let manager = ProviderManager(historyStore: temporaryHistoryStore())
+        manager.providers = [RefreshStubProvider(id: providerID)]
+
+        XCTAssertTrue(manager.shouldRefreshBalances(maxAge: 60, now: now))
+
+        manager.balances[providerID] = Balance(
+            amount: 42,
+            currency: "tokens",
+            timestamp: now.addingTimeInterval(-59)
+        )
+        XCTAssertFalse(manager.shouldRefreshBalances(maxAge: 60, now: now))
+
+        manager.balances[providerID] = Balance(
+            amount: 42,
+            currency: "tokens",
+            timestamp: now.addingTimeInterval(-60)
+        )
+        XCTAssertTrue(manager.shouldRefreshBalances(maxAge: 60, now: now))
+    }
+
     func testWeeklyQuotaMarkerAllocatesOneWholeShareAtEachResetBoundary() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: 0))
@@ -480,6 +536,33 @@ final class XanaTokenMonitorKitTests: XCTestCase {
             ]
         )))
     }
+
+    private func temporaryHistoryStore() -> QuotaHistoryStore {
+        QuotaHistoryStore(
+            fileURL: FileManager.default.temporaryDirectory
+                .appendingPathComponent("xana-token-monitor-tests-\(UUID().uuidString).json")
+        )
+    }
+}
+
+private struct RefreshStubProvider: ModelProvider {
+    let id: UUID
+    var name = "Refresh Stub"
+    var apiKey = ""
+    var baseURL = "local"
+    var balance: Balance?
+    var shouldFail = false
+
+    func fetchBalance() async throws -> Balance {
+        if shouldFail {
+            throw RefreshStubError.expectedFailure
+        }
+        return balance ?? Balance(amount: 0, currency: "tokens", timestamp: Date())
+    }
+}
+
+private enum RefreshStubError: Error {
+    case expectedFailure
 }
 
 private extension XCTestCase {

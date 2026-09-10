@@ -214,6 +214,13 @@ struct QuotaHistoryStore {
     }
 }
 
+enum BalanceRefreshResult: Equatable {
+    case none
+    case success
+    case partialFailure
+    case failure
+}
+
 @Observable
 @MainActor
 class ProviderManager {
@@ -222,8 +229,13 @@ class ProviderManager {
     var errors: [UUID: Error] = [:]
     var providerNames: [UUID: String] = [:]
     private(set) var quotaHistory: [UUID: [QuotaHistorySample]]
+    private(set) var isRefreshing = false
+    private(set) var refreshingProviderIDs: Set<UUID> = []
+    private(set) var lastRefreshResult: BalanceRefreshResult = .none
+    private(set) var lastRefreshCompletedAt: Date?
     var pollingInterval: TimeInterval = 300 // 5 minutes
     private var pollingTask: Task<Void, Never>?
+    private var feedbackResetTask: Task<Void, Never>?
     private let historyStore: QuotaHistoryStore
     
     init(historyStore: QuotaHistoryStore = .appDefault) {
@@ -254,6 +266,7 @@ class ProviderManager {
         providers.removeAll { $0.id == id }
         balances.removeValue(forKey: id)
         errors.removeValue(forKey: id)
+        refreshingProviderIDs.remove(id)
         providerNames.removeValue(forKey: id)
         quotaHistory.removeValue(forKey: id)
         saveProviders()
@@ -262,8 +275,23 @@ class ProviderManager {
     }
     
     func fetchAllBalances() async {
+        guard !isRefreshing else { return }
+
         let providersCopy = providers
-        var results: [(UUID, Result<Balance, Error>)] = []
+        guard !providersCopy.isEmpty else {
+            lastRefreshResult = .none
+            return
+        }
+
+        feedbackResetTask?.cancel()
+        lastRefreshResult = .none
+        isRefreshing = true
+        refreshingProviderIDs = Set(providersCopy.map(\.id))
+
+        let historyNow = Date()
+        var successCount = 0
+        var failureCount = 0
+        var didChangeHistory = false
         
         await withTaskGroup(of: (UUID, Result<Balance, Error>).self) { group in
             for provider in providersCopy {
@@ -277,29 +305,39 @@ class ProviderManager {
                 }
             }
             
-            for await result in group {
-                results.append(result)
+            for await (id, result) in group {
+                refreshingProviderIDs.remove(id)
+
+                switch result {
+                case .success(let balance):
+                    successCount += 1
+                    balances[id] = balance
+                    errors.removeValue(forKey: id)
+                    if let sample = QuotaHistorySample(balance: balance) {
+                        quotaHistory[id] = QuotaHistoryStore.appending(
+                            sample,
+                            to: quotaHistory[id] ?? [],
+                            now: historyNow
+                        )
+                        didChangeHistory = true
+                    }
+                case .failure(let error):
+                    failureCount += 1
+                    errors[id] = error
+                }
             }
         }
-        
-        let historyNow = Date()
-        var didChangeHistory = false
-        for (id, result) in results {
-            switch result {
-            case .success(let balance):
-                balances[id] = balance
-                errors.removeValue(forKey: id)
-                if let sample = QuotaHistorySample(balance: balance) {
-                    quotaHistory[id] = QuotaHistoryStore.appending(
-                        sample,
-                        to: quotaHistory[id] ?? [],
-                        now: historyNow
-                    )
-                    didChangeHistory = true
-                }
-            case .failure(let error):
-                errors[id] = error
-            }
+
+        refreshingProviderIDs.removeAll()
+        isRefreshing = false
+        let completionDate = Date()
+        lastRefreshCompletedAt = completionDate
+        if failureCount == 0 {
+            lastRefreshResult = .success
+        } else if successCount == 0 {
+            lastRefreshResult = .failure
+        } else {
+            lastRefreshResult = .partialFailure
         }
 
         if didChangeHistory {
@@ -307,6 +345,22 @@ class ProviderManager {
         }
 
         WidgetSnapshot.push(providers: providers, balances: balances, displayNames: providerNames)
+
+        feedbackResetTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled,
+                  self?.lastRefreshCompletedAt == completionDate,
+                  self?.isRefreshing == false else { return }
+            self?.lastRefreshResult = .none
+        }
+    }
+
+    func shouldRefreshBalances(maxAge: TimeInterval = 60, now: Date = Date()) -> Bool {
+        guard !isRefreshing, !providers.isEmpty else { return false }
+        return providers.contains { provider in
+            guard let balance = balances[provider.id] else { return true }
+            return now.timeIntervalSince(balance.timestamp) >= maxAge
+        }
     }
 
     func startPolling() {

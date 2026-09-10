@@ -148,13 +148,17 @@ struct ProviderListView: View {
             Button {
                 Task { await providerManager.fetchAllBalances() }
             } label: {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 11, weight: .medium))
+                RefreshFeedbackIcon(
+                    isRefreshing: providerManager.isRefreshing,
+                    result: providerManager.lastRefreshResult
+                )
                     .frame(width: 22, height: 20)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help("刷新全部")
+            .allowsHitTesting(!providerManager.isRefreshing)
+            .help(refreshHelp)
+            .accessibilityLabel(refreshHelp)
 
             Button {
                 showingAddProvider = true
@@ -170,6 +174,16 @@ struct ProviderListView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(.bar)
+    }
+
+    private var refreshHelp: String {
+        if providerManager.isRefreshing { return "正在刷新全部提供方" }
+        switch providerManager.lastRefreshResult {
+        case .none: return "刷新全部"
+        case .success: return "刷新完成"
+        case .partialFailure: return "部分提供方刷新失败"
+        case .failure: return "刷新失败"
+        }
     }
 
     private var emptyStateView: some View {
