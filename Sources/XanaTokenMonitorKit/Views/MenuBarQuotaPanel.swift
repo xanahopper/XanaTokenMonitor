@@ -643,7 +643,7 @@ private struct QuotaHistorySparkline: View {
 
             ZStack(alignment: .topLeading) {
                 Canvas { context, size in
-                    guard let first = orderedPoints.first, let last = orderedPoints.last else { return }
+                    guard let first = orderedPoints.first else { return }
 
                     if orderedPoints.count == 1 {
                         let center = position(first, in: size)
@@ -662,10 +662,7 @@ private struct QuotaHistorySparkline: View {
                         }
                         context.stroke(
                             path,
-                            with: .color(QuotaPalette.remainingColor(
-                                remainingPercent: last.1,
-                                theme: selectedTheme
-                            )),
+                            with: historyLineShading(in: size),
                             style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
                         )
                     }
@@ -740,6 +737,25 @@ private struct QuotaHistorySparkline: View {
 
     private var selectedTheme: QuotaColorTheme {
         QuotaColorTheme(rawValue: selectedThemeRawValue) ?? .classic
+    }
+
+    /// 折线颜色由纵轴的剩余额度决定，避免整条历史曲线被最新采样值染成同一种颜色。
+    private func historyLineShading(in size: CGSize) -> GraphicsContext.Shading {
+        let verticalInset: CGFloat = 3
+        let stops = [0.0, 20.0, 75.0, 100.0].map { remainingPercent in
+            Gradient.Stop(
+                color: QuotaPalette.remainingColor(
+                    remainingPercent: remainingPercent,
+                    theme: selectedTheme
+                ),
+                location: CGFloat(remainingPercent / 100)
+            )
+        }
+        return .linearGradient(
+            Gradient(stops: stops),
+            startPoint: CGPoint(x: 0, y: max(verticalInset, size.height - verticalInset)),
+            endPoint: CGPoint(x: 0, y: verticalInset)
+        )
     }
 
     private func position(_ point: (Date, Double), in size: CGSize) -> CGPoint {
