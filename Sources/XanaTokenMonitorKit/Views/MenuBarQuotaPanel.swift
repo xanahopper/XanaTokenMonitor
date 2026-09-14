@@ -485,23 +485,24 @@ struct MenuBarQuotaPanel: View {
     }
 }
 
-private enum QuotaHistoryRange: String, CaseIterable, Identifiable {
+enum QuotaHistoryRange: String, CaseIterable, Identifiable {
     case day
-    case week
+    case recentSevenDays
 
     var id: Self { self }
-    var title: String { self == .day ? "当天" : "当周" }
-    var subtitle: String { self == .day ? "当天趋势" : "当周趋势" }
-    var trendTitle: String { self == .day ? "当天趋势" : "当周趋势" }
+    var title: String { self == .day ? "当天" : "近 7 天" }
+    var subtitle: String { self == .day ? "当天趋势" : "近 7 天趋势" }
+    var trendTitle: String { self == .day ? "当天趋势" : "近 7 天趋势" }
 
     func interval(containing date: Date, calendar: Calendar = .autoupdatingCurrent) -> DateInterval {
         switch self {
         case .day:
             return calendar.dateInterval(of: .day, for: date)
                 ?? DateInterval(start: calendar.startOfDay(for: date), duration: 24 * 60 * 60)
-        case .week:
-            return calendar.dateInterval(of: .weekOfYear, for: date)
-                ?? DateInterval(start: calendar.startOfDay(for: date), duration: 7 * 24 * 60 * 60)
+        case .recentSevenDays:
+            let start = calendar.date(byAdding: .day, value: -7, to: date)
+                ?? date.addingTimeInterval(-7 * 24 * 60 * 60)
+            return DateInterval(start: start, end: date)
         }
     }
 
@@ -509,14 +510,14 @@ private enum QuotaHistoryRange: String, CaseIterable, Identifiable {
         switch self {
         case .day:
             return ("00:00", "12:00", "24:00")
-        case .week:
+        case .recentSevenDays:
             let formatter = DateFormatter()
             formatter.locale = .autoupdatingCurrent
             formatter.setLocalizedDateFormatFromTemplate("Md")
             return (
                 formatter.string(from: interval.start),
                 formatter.string(from: interval.start.addingTimeInterval(interval.duration / 2)),
-                formatter.string(from: interval.end)
+                "现在"
             )
         }
     }

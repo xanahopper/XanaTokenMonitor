@@ -6,6 +6,31 @@ import ServiceManagement
 
 final class XanaTokenMonitorKitTests: XCTestCase {
     #if os(macOS)
+    func testRecentSevenDayHistoryRangeIsRollingAndEndsAtNow() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: 0))
+        let now = try XCTUnwrap(calendar.date(from: DateComponents(
+            year: 2026,
+            month: 9,
+            day: 14,
+            hour: 16,
+            minute: 30
+        )))
+
+        let interval = QuotaHistoryRange.recentSevenDays.interval(
+            containing: now,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(interval.end, now)
+        XCTAssertEqual(interval.start, calendar.date(byAdding: .day, value: -7, to: now))
+        XCTAssertEqual(QuotaHistoryRange.recentSevenDays.title, "近 7 天")
+        XCTAssertEqual(QuotaHistoryRange.recentSevenDays.trendTitle, "近 7 天趋势")
+        XCTAssertEqual(QuotaHistoryRange.recentSevenDays.axisLabels(for: interval).end, "现在")
+    }
+    #endif
+
+    #if os(macOS)
     @MainActor
     func testLaunchAtLoginTreatsEnabledAndPendingApprovalAsRegistered() {
         XCTAssertTrue(LaunchAtLoginSettings.isRegistered(.enabled))
