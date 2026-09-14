@@ -1,15 +1,71 @@
 import SwiftUI
+#if os(macOS)
+import ServiceManagement
+#endif
+
+#if os(macOS)
+@Observable
+@MainActor
+final class LaunchAtLoginSettings {
+    private(set) var status = SMAppService.mainApp.status
+    private(set) var errorMessage: String?
+
+    var isRegistered: Bool {
+        Self.isRegistered(status)
+    }
+
+    static func isRegistered(_ status: SMAppService.Status) -> Bool {
+        switch status {
+        case .enabled, .requiresApproval:
+            return true
+        case .notRegistered, .notFound:
+            return false
+        @unknown default:
+            return false
+        }
+    }
+
+    var requiresApproval: Bool {
+        status == .requiresApproval
+    }
+
+    func refresh() {
+        status = SMAppService.mainApp.status
+    }
+
+    func setEnabled(_ enabled: Bool) {
+        errorMessage = nil
+
+        do {
+            if enabled {
+                guard !isRegistered else { return }
+                try SMAppService.mainApp.register()
+            } else {
+                guard isRegistered else { return }
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            errorMessage = "无法更新登录项：\(error.localizedDescription)"
+        }
+
+        refresh()
+    }
+}
+#endif
 
 struct ProviderListView: View {
     private let providerManager: ProviderManager
-    @State private var showingAddProvider = false
+    @State private var panelActions = PanelActions.shared
     @AppStorage(QuotaColorTheme.storageKey) private var quotaColorThemeRawValue = QuotaColorTheme.classic.rawValue
     #if os(macOS)
     @State private var selectedConfigurationTab = ConfigurationTab.providers
+    @State private var launchAtLoginSettings = LaunchAtLoginSettings()
+    @Environment(\.scenePhase) private var scenePhase
 
     private enum ConfigurationTab: String, CaseIterable, Identifiable {
         case providers
         case colors
+        case general
 
         var id: Self { self }
 
@@ -17,6 +73,7 @@ struct ProviderListView: View {
             switch self {
             case .providers: return "模型提供商"
             case .colors: return "配色方案"
+            case .general: return "通用"
             }
         }
 
@@ -24,6 +81,7 @@ struct ProviderListView: View {
             switch self {
             case .providers: return "server.rack"
             case .colors: return "paintpalette"
+            case .general: return "gearshape"
             }
         }
     }
@@ -35,8 +93,7 @@ struct ProviderListView: View {
     }
 
     var body: some View {
-        // 面板「添加提供方」按钮的请求(读取以建立观察,变更会触发刷新)
-        let wantsAddFromPanel = PanelActions.showAddProvider
+        @Bindable var panelActions = panelActions
 
         NavigationStack {
             #if os(macOS)
@@ -50,7 +107,7 @@ struct ProviderListView: View {
                 .navigationTitle("Token Monitor")
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
-                        Button(action: { showingAddProvider = true }) {
+                        Button(action: { panelActions.showAddProvider = true }) {
                             Label("Add Provider", systemImage: "plus")
                         }
                     }
@@ -75,13 +132,7 @@ struct ProviderListView: View {
                 }
             #endif
         }
-        .sheet(isPresented: Binding(
-            get: { showingAddProvider || wantsAddFromPanel },
-            set: { newValue in
-                showingAddProvider = newValue
-                if !newValue { PanelActions.showAddProvider = false }
-            }
-        )) {
+        .sheet(isPresented: $panelActions.showAddProvider) {
             AddProviderView(providerManager: providerManager)
         }
         .task {
@@ -94,6 +145,13 @@ struct ProviderListView: View {
                 displayNames: providerManager.providerNames
             )
         }
+        #if os(macOS)
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                launchAtLoginSettings.refresh()
+            }
+        }
+        #endif
     }
 
     private var mainContent: some View {
@@ -107,7 +165,7 @@ struct ProviderListView: View {
             }
             .labelsHidden()
             .pickerStyle(.segmented)
-            .frame(width: 280)
+            .frame(width: 360)
             .padding(.vertical, 9)
 
             Divider()
@@ -124,6 +182,8 @@ struct ProviderListView: View {
                     QuotaThemeSelector(selection: $quotaColorThemeRawValue)
                         .padding(14)
                 }
+            case .general:
+                generalSettings
             }
         }
         #else
@@ -136,6 +196,66 @@ struct ProviderListView: View {
         }
         #endif
     }
+
+    #if os(macOS)
+    private var generalSettings: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            GroupBox("启动") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Toggle(
+                        "登录时启动 Xana Token Monitor",
+                        isOn: Binding(
+                            get: { launchAtLoginSettings.isRegistered },
+                            set: { launchAtLoginSettings.setEnabled($0) }
+                        )
+                    )
+                    .toggleStyle(.switch)
+
+                    Text(launchAtLoginStatusDescription)
+                        .font(.caption)
+                        .foregroundStyle(launchAtLoginSettings.requiresApproval ? .orange : .secondary)
+
+                    if launchAtLoginSettings.requiresApproval {
+                        Button("打开系统登录项设置…") {
+                            SMAppService.openSystemSettingsLoginItems()
+                        }
+                        .controlSize(.small)
+                    }
+
+                    if let errorMessage = launchAtLoginSettings.errorMessage {
+                        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .textSelection(.enabled)
+                    }
+                }
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Spacer()
+        }
+        .padding(16)
+        .onAppear {
+            launchAtLoginSettings.refresh()
+        }
+    }
+
+    private var launchAtLoginStatusDescription: String {
+        switch launchAtLoginSettings.status {
+        case .enabled:
+            return "将在你登录 Mac 后自动启动，并继续保持菜单栏模式。"
+        case .requiresApproval:
+            return "需要在系统设置的“登录项”中允许后才能自动启动。"
+        case .notRegistered:
+            return "关闭后，应用不会在登录 Mac 时自动启动。"
+        case .notFound:
+            return "系统无法找到此登录项，请将应用放入“应用程序”文件夹后重试。"
+        @unknown default:
+            return "无法读取当前登录项状态。"
+        }
+    }
+    #endif
 
     /// 配置窗口的自绘顶栏(配合 hiddenTitleBar 使用)
     private var header: some View {
@@ -161,7 +281,7 @@ struct ProviderListView: View {
             .accessibilityLabel(refreshHelp)
 
             Button {
-                showingAddProvider = true
+                panelActions.showAddProvider = true
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 11, weight: .medium))
@@ -193,7 +313,7 @@ struct ProviderListView: View {
             Text("Add an AI provider to monitor token usage and balances.")
         } actions: {
             Button("Add Provider") {
-                showingAddProvider = true
+                panelActions.showAddProvider = true
             }
             .buttonStyle(.borderedProminent)
         }

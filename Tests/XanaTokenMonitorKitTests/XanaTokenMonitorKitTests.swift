@@ -1,7 +1,39 @@
 import XCTest
+#if os(macOS)
+import ServiceManagement
+#endif
 @testable import XanaTokenMonitorKit
 
 final class XanaTokenMonitorKitTests: XCTestCase {
+    #if os(macOS)
+    @MainActor
+    func testLaunchAtLoginTreatsEnabledAndPendingApprovalAsRegistered() {
+        XCTAssertTrue(LaunchAtLoginSettings.isRegistered(.enabled))
+        XCTAssertTrue(LaunchAtLoginSettings.isRegistered(.requiresApproval))
+        XCTAssertFalse(LaunchAtLoginSettings.isRegistered(.notRegistered))
+        XCTAssertFalse(LaunchAtLoginSettings.isRegistered(.notFound))
+    }
+    #endif
+
+    @MainActor
+    func testPanelAddProviderPresentationStateIsObservableAndDismissible() {
+        let panelActions = PanelActions.shared
+        panelActions.showAddProvider = false
+        let stateChanged = expectation(description: "Panel presentation state changed")
+
+        withObservationTracking {
+            _ = panelActions.showAddProvider
+        } onChange: {
+            stateChanged.fulfill()
+        }
+
+        panelActions.showAddProvider = true
+        wait(for: [stateChanged], timeout: 0.1)
+
+        panelActions.showAddProvider = false
+        XCTAssertFalse(panelActions.showAddProvider)
+    }
+
     func testAPIKeyArchiveCombinesProvidersAndOmitsBlankValues() throws {
         let firstID = try XCTUnwrap(UUID(uuidString: "3FD8AF88-E380-40B7-A819-7743846342C1"))
         let secondID = try XCTUnwrap(UUID(uuidString: "D13032D0-917A-407D-BB8B-F0731F58B600"))

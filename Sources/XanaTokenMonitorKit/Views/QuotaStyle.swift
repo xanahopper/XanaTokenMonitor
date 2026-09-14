@@ -7,11 +7,19 @@ import UIKit
 typealias ProviderIconPlatformImage = UIImage
 #endif
 
-/// 面板与主窗口之间的轻量动作通道
+/// 面板与主窗口之间的轻量动作通道。
+///
+/// 这里必须是可观察对象，否则主窗口会在 sheet 的 Binding 中持有一次渲染时的旧值，
+/// 从菜单栏打开 sheet 后即使点击取消也会继续读到 `true`。
+@Observable
 @MainActor
-enum PanelActions {
+final class PanelActions {
+    static let shared = PanelActions()
+
     /// 面板请求主窗口展示「添加提供方」
-    static var showAddProvider = false
+    var showAddProvider = false
+
+    private init() {}
 }
 
 struct RefreshFeedbackIcon: View {

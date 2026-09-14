@@ -47,6 +47,7 @@ enum MainWindowTracker {
 /// 状态栏图标点击后弹出的紧凑面板:提供方名称为小节头,下方逐行列出配额,小节间用分隔线。
 struct MenuBarQuotaPanel: View {
     let providerManager: ProviderManager
+    @State private var panelActions = PanelActions.shared
     @State private var hoveredProviderID: UUID?
     @State private var menuWindow: NSWindow?
     @State private var menuContentFrame: NSRect?
@@ -97,7 +98,7 @@ struct MenuBarQuotaPanel: View {
                 Spacer()
                 controlButton("plus", help: "添加提供方") {
                     MainWindowOpener.open()
-                    PanelActions.showAddProvider = true
+                    panelActions.showAddProvider = true
                 }
                 Spacer()
                 controlButton("gearshape", help: "打开配置窗口") {
