@@ -59,11 +59,11 @@ struct ProviderListView: View {
     @AppStorage(QuotaBarShape.storageKey) private var quotaBarShapeRawValue = QuotaBarShape.square.rawValue
     @AppStorage(QuotaColorTheme.storageKey) private var quotaColorThemeRawValue = QuotaColorTheme.classic.rawValue
     #if os(macOS)
-    @State private var selectedConfigurationTab = ConfigurationTab.providers
+    @State private var selectedConfigurationPage = ConfigurationPage.providers
     @State private var launchAtLoginSettings = LaunchAtLoginSettings()
     @Environment(\.scenePhase) private var scenePhase
 
-    private enum ConfigurationTab: String, CaseIterable, Identifiable {
+    private enum ConfigurationPage: String, CaseIterable, Identifiable {
         case providers
         case colors
         case general
@@ -81,7 +81,7 @@ struct ProviderListView: View {
         var icon: String {
             switch self {
             case .providers: return "server.rack"
-            case .colors: return "paintpalette"
+            case .colors: return "paintbrush.pointed"
             case .general: return "gearshape"
             }
         }
@@ -96,41 +96,39 @@ struct ProviderListView: View {
     var body: some View {
         @Bindable var panelActions = panelActions
 
-        NavigationStack {
+        Group {
             #if os(macOS)
-            VStack(spacing: 0) {
-                header
-                Divider()
-                mainContent
-            }
-            #else
             mainContent
-                .navigationTitle("XanaTokenMonitor")
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button(action: { panelActions.showAddProvider = true }) {
-                            Label("Add Provider", systemImage: "plus")
+            #else
+            NavigationStack {
+                mainContent
+                    .navigationTitle("XanaTokenMonitor")
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button(action: { panelActions.showAddProvider = true }) {
+                                Label("Add Provider", systemImage: "plus")
+                            }
                         }
-                    }
 
-                    #if os(iOS)
-                    if !providerManager.providers.isEmpty {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            EditButton()
+                        #if os(iOS)
+                        if !providerManager.providers.isEmpty {
+                            ToolbarItem(placement: .navigationBarLeading) {
+                                EditButton()
+                            }
                         }
-                    }
-                    #endif
+                        #endif
 
-                    #if os(watchOS)
-                    ToolbarItem(placement: .bottomBar) {
-                        Button(action: {
-                            Task { await providerManager.fetchAllBalances() }
-                        }) {
-                            Label("Refresh", systemImage: "arrow.clockwise")
+                        #if os(watchOS)
+                        ToolbarItem(placement: .bottomBar) {
+                            Button(action: {
+                                Task { await providerManager.fetchAllBalances() }
+                            }) {
+                                Label("Refresh", systemImage: "arrow.clockwise")
+                            }
                         }
+                        #endif
                     }
-                    #endif
-                }
+            }
             #endif
         }
         .sheet(isPresented: $panelActions.showAddProvider) {
@@ -155,36 +153,14 @@ struct ProviderListView: View {
         #endif
     }
 
+    @ViewBuilder
     private var mainContent: some View {
         #if os(macOS)
-        VStack(spacing: 0) {
-            Picker("配置分类", selection: $selectedConfigurationTab) {
-                ForEach(ConfigurationTab.allCases) { tab in
-                    Label(tab.title, systemImage: tab.icon)
-                        .tag(tab)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .frame(width: 360)
-            .padding(.vertical, 9)
-
-            Divider()
-
-            switch selectedConfigurationTab {
-            case .providers:
-                providerSettings
-            case .colors:
-                ScrollView {
-                    QuotaAppearanceSelector(
-                        barShapeSelection: $quotaBarShapeRawValue,
-                        themeSelection: $quotaColorThemeRawValue
-                    )
-                        .padding(14)
-                }
-            case .general:
-                generalSettings
-            }
+        if #available(macOS 15.0, *) {
+            configurationSplitView
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        } else {
+            configurationSplitView
         }
         #else
         Group {
@@ -198,42 +174,68 @@ struct ProviderListView: View {
     }
 
     #if os(macOS)
+    private var configurationSplitView: some View {
+        NavigationSplitView {
+            List(selection: $selectedConfigurationPage) {
+                Section("配置") {
+                    ForEach(ConfigurationPage.allCases) { page in
+                        Label {
+                            Text(page.title)
+                        } icon: {
+                            Image(systemName: page.icon)
+                                .symbolRenderingMode(.monochrome)
+                                .foregroundStyle(.secondary)
+                                .font(.system(size: 13, weight: .medium))
+                                .frame(width: 16, height: 16)
+                        }
+                        .tag(page)
+                    }
+                }
+            }
+            .listStyle(.sidebar)
+            .navigationTitle("设置")
+            .navigationSplitViewColumnWidth(min: 150, ideal: 180, max: 220)
+            .toolbar(removing: .sidebarToggle)
+        } detail: {
+            configurationDetail
+                .navigationTitle("XanaTokenMonitor")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .navigationSplitViewStyle(.balanced)
+    }
+
+    @ViewBuilder
+    private var configurationDetail: some View {
+        switch selectedConfigurationPage {
+        case .providers:
+            providerSettings
+        case .colors:
+            ScrollView {
+                QuotaAppearanceSelector(
+                    barShapeSelection: $quotaBarShapeRawValue,
+                    themeSelection: $quotaColorThemeRawValue
+                )
+                .padding(14)
+            }
+        case .general:
+            generalSettings
+        }
+    }
+
+    @ViewBuilder
     private var providerSettings: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
-                Spacer()
+                Text("提供商")
+                    .font(.headline)
 
-                Button {
-                    Task { await providerManager.fetchAllBalances() }
-                } label: {
-                    HStack(spacing: 5) {
-                        RefreshFeedbackIcon(
-                            isRefreshing: providerManager.isRefreshing,
-                            result: providerManager.lastRefreshResult,
-                            size: 10
-                        )
-                        Text("刷新")
-                    }
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .allowsHitTesting(!providerManager.isRefreshing)
-                .help(refreshHelp)
-                .accessibilityLabel(refreshHelp)
+                Spacer(minLength: 8)
 
-                Button {
-                    panelActions.showAddProvider = true
-                } label: {
-                    Label("添加", systemImage: "plus")
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .help("添加提供方")
+                providerActions
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-
-            Divider()
+            .padding(.top, 10)
+            .padding(.bottom, 4)
 
             if providerManager.providers.isEmpty {
                 emptyStateView
@@ -243,75 +245,81 @@ struct ProviderListView: View {
         }
     }
 
+    private var providerActions: some View {
+        HStack(spacing: 2) {
+            Button {
+                Task { await providerManager.fetchAllBalances() }
+            } label: {
+                RefreshFeedbackIcon(
+                    isRefreshing: providerManager.isRefreshing,
+                    result: providerManager.lastRefreshResult,
+                    size: 12
+                )
+                .frame(width: 22, height: 22)
+            }
+            .buttonStyle(.borderless)
+            .disabled(providerManager.isRefreshing)
+            .help(refreshHelp)
+            .accessibilityLabel(refreshHelp)
+
+            Button {
+                panelActions.showAddProvider = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 13, weight: .medium))
+                    .frame(width: 22, height: 22)
+            }
+            .buttonStyle(.borderless)
+            .help("添加提供方")
+            .accessibilityLabel("添加提供方")
+        }
+    }
+
     private var generalSettings: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            GroupBox("启动") {
-                VStack(alignment: .leading, spacing: 10) {
-                    Toggle(
-                        "登录时启动 Xana Token Monitor",
-                        isOn: Binding(
-                            get: { launchAtLoginSettings.isRegistered },
-                            set: { launchAtLoginSettings.setEnabled($0) }
-                        )
+        Form {
+            Section {
+                Toggle(
+                    "登录时启动",
+                    isOn: Binding(
+                        get: { launchAtLoginSettings.isRegistered },
+                        set: { launchAtLoginSettings.setEnabled($0) }
                     )
-                    .toggleStyle(.switch)
+                )
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+            } header: {
+                Text("启动")
+            }
 
-                    Text(launchAtLoginStatusDescription)
-                        .font(.caption)
-                        .foregroundStyle(launchAtLoginSettings.requiresApproval ? .orange : .secondary)
+            if launchAtLoginSettings.requiresApproval {
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("需要在系统设置中允许此登录项。", systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.orange)
 
-                    if launchAtLoginSettings.requiresApproval {
                         Button("打开系统登录项设置…") {
                             SMAppService.openSystemSettingsLoginItems()
                         }
                         .controlSize(.small)
                     }
-
-                    if let errorMessage = launchAtLoginSettings.errorMessage {
-                        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .textSelection(.enabled)
-                    }
                 }
-                .padding(8)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            Spacer()
+            if let errorMessage = launchAtLoginSettings.errorMessage {
+                Section {
+                    Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .textSelection(.enabled)
+                }
+            }
         }
-        .padding(16)
+        .formStyle(.grouped)
+        .frame(maxWidth: 560, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
             launchAtLoginSettings.refresh()
         }
     }
-
-    private var launchAtLoginStatusDescription: String {
-        switch launchAtLoginSettings.status {
-        case .enabled:
-            return "将在你登录 Mac 后自动启动，并继续保持菜单栏模式。"
-        case .requiresApproval:
-            return "需要在系统设置的“登录项”中允许后才能自动启动。"
-        case .notRegistered:
-            return "关闭后，应用不会在登录 Mac 时自动启动。"
-        case .notFound:
-            return "系统无法找到此登录项，请将应用放入“应用程序”文件夹后重试。"
-        @unknown default:
-            return "无法读取当前登录项状态。"
-        }
-    }
     #endif
-
-    /// 配置窗口的自绘顶栏(配合 hiddenTitleBar 使用)
-    private var header: some View {
-        HStack {
-            Text("XanaTokenMonitor")
-                .font(.system(size: 13, weight: .semibold))
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(.bar)
-    }
 
     private var refreshHelp: String {
         if providerManager.isRefreshing { return "正在刷新全部提供方" }
@@ -325,11 +333,11 @@ struct ProviderListView: View {
 
     private var emptyStateView: some View {
         ContentUnavailableView {
-            Label("No Providers", systemImage: "network.slash")
+            Label("暂无模型提供商", systemImage: "network.slash")
         } description: {
-            Text("Add an AI provider to monitor token usage and balances.")
+            Text("添加模型提供商以监控额度和余额。")
         } actions: {
-            Button("Add Provider") {
+            Button("添加提供商") {
                 panelActions.showAddProvider = true
             }
             .buttonStyle(.borderedProminent)
@@ -338,17 +346,20 @@ struct ProviderListView: View {
 
     private var providerList: some View {
         #if os(macOS)
-        List {
-            ForEach(providerManager.providers, id: \.id) { provider in
-                ProviderConfigRow(
-                    provider: provider,
-                    displayName: providerManager.providerNames[provider.id],
-                    onRename: { providerManager.renameProvider(id: provider.id, to: $0) },
-                    onDelete: { providerManager.removeProvider(id: provider.id) }
-                )
+        Form {
+            Section {
+                ForEach(providerManager.providers, id: \.id) { provider in
+                    ProviderConfigRow(
+                        provider: provider,
+                        displayName: providerManager.providerNames[provider.id],
+                        onRename: { providerManager.renameProvider(id: provider.id, to: $0) },
+                        onDelete: { providerManager.removeProvider(id: provider.id) }
+                    )
+                }
             }
         }
-        .listStyle(.inset)
+        .formStyle(.grouped)
+        .frame(maxWidth: 560, maxHeight: .infinity, alignment: .topLeading)
         #else
         List {
             ForEach(providerManager.providers, id: \.id) { provider in
@@ -553,33 +564,17 @@ struct ProviderConfigRow: View {
     var onRename: ((String) -> Void)?
     var onDelete: (() -> Void)?
 
-    @State private var isEditingName = false
-    @State private var draftName = ""
-    @FocusState private var nameFieldFocused: Bool
+    @State private var isRenameSheetPresented = false
 
     var body: some View {
         HStack(spacing: 10) {
             brandIcon
 
             VStack(alignment: .leading, spacing: 1) {
-                if isEditingName {
-                    TextField("账户名称", text: $draftName)
-                        .textFieldStyle(.plain)
-                        .font(.subheadline.weight(.semibold))
-                        .focused($nameFieldFocused)
-                        .onSubmit(commitRename)
-                        #if os(macOS)
-                        .onExitCommand { isEditingName = false }
-                        #endif
-                } else {
-                    Text(displayName ?? provider.name)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                        #if os(macOS)
-                        .onTapGesture(count: 2) { beginRename() }
-                        #endif
-                }
+                Text(displayName ?? provider.name)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
 
                 Text(provider.name)
                     .font(.caption2)
@@ -591,7 +586,7 @@ struct ProviderConfigRow: View {
 
             if onRename != nil {
                 Button {
-                    beginRename()
+                    presentRenameSheet()
                 } label: {
                     Image(systemName: "pencil")
                         .font(.system(size: 10, weight: .medium))
@@ -599,7 +594,7 @@ struct ProviderConfigRow: View {
                         .frame(width: 20, height: 20)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .help("重命名账户")
             }
 
@@ -613,11 +608,18 @@ struct ProviderConfigRow: View {
                         .frame(width: 20, height: 20)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .help("删除")
             }
         }
         .padding(.vertical, 2)
+        .sheet(isPresented: $isRenameSheetPresented) {
+            RenameProviderSheet(
+                initialName: displayName ?? provider.name,
+                providerType: provider.name,
+                onSave: { onRename?($0) }
+            )
+        }
     }
 
     private var brandIcon: some View {
@@ -636,18 +638,81 @@ struct ProviderConfigRow: View {
         .frame(width: 30, height: 30)
     }
 
-    private func beginRename() {
-        draftName = displayName ?? provider.name
-        isEditingName = true
-        DispatchQueue.main.async {
+    private func presentRenameSheet() {
+        guard onRename != nil else { return }
+        isRenameSheetPresented = true
+    }
+}
+
+private struct RenameProviderSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var nameFieldFocused: Bool
+
+    @State private var name: String
+    let providerType: String
+    let onSave: (String) -> Void
+
+    init(initialName: String, providerType: String, onSave: @escaping (String) -> Void) {
+        _name = State(initialValue: initialName)
+        self.providerType = providerType
+        self.onSave = onSave
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("重命名账户")
+                    .font(.title3.weight(.semibold))
+                Text(providerType)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("名称")
+                    .font(.subheadline.weight(.medium))
+
+                TextField("账户名称", text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($nameFieldFocused)
+                    .onSubmit(save)
+            }
+
+            HStack(spacing: 8) {
+                Spacer()
+
+                Button("取消") {
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Button("完成") {
+                    save()
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+                .disabled(trimmedName.isEmpty)
+            }
+        }
+        .padding(20)
+        .frame(width: 360)
+        .onAppear {
             nameFieldFocused = true
+        }
+        .onExitCommand {
+            dismiss()
         }
     }
 
-    private func commitRename() {
-        guard isEditingName else { return }
-        onRename?(draftName)
-        isEditingName = false
+    private func save() {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+        onSave(trimmedName)
+        dismiss()
+    }
+
+    private var trimmedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 

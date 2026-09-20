@@ -365,11 +365,11 @@
 				};
 			};
 			buildConfigurationList = A8F77F8921864456BFDCDCA6 /* Build configuration list for PBXProject "XanaTokenMonitor" */;
-			developmentRegion = en;
+			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
-				en,
+				"zh-Hans",
 			);
 			mainGroup = 43E7F68E3C1E38ACAC3E4053;
 			minimizedProjectReferenceProxies = 1;
