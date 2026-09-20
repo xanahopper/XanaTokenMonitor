@@ -56,6 +56,7 @@ final class LaunchAtLoginSettings {
 struct ProviderListView: View {
     private let providerManager: ProviderManager
     @State private var panelActions = PanelActions.shared
+    @AppStorage(QuotaBarShape.storageKey) private var quotaBarShapeRawValue = QuotaBarShape.square.rawValue
     @AppStorage(QuotaColorTheme.storageKey) private var quotaColorThemeRawValue = QuotaColorTheme.classic.rawValue
     #if os(macOS)
     @State private var selectedConfigurationTab = ConfigurationTab.providers
@@ -72,7 +73,7 @@ struct ProviderListView: View {
         var title: String {
             switch self {
             case .providers: return "模型提供商"
-            case .colors: return "配色方案"
+            case .colors: return "外观"
             case .general: return "通用"
             }
         }
@@ -179,7 +180,10 @@ struct ProviderListView: View {
                 }
             case .colors:
                 ScrollView {
-                    QuotaThemeSelector(selection: $quotaColorThemeRawValue)
+                    QuotaAppearanceSelector(
+                        barShapeSelection: $quotaBarShapeRawValue,
+                        themeSelection: $quotaColorThemeRawValue
+                    )
                         .padding(14)
                 }
             case .general:
@@ -362,48 +366,85 @@ struct ProviderListView: View {
 }
 
 #if os(macOS)
-private struct QuotaThemeSelector: View {
-    @Binding var selection: String
+private struct QuotaAppearanceSelector: View {
+    @Binding var barShapeSelection: String
+    @Binding var themeSelection: String
 
-    private let columns = Array(
+    private let themeColumns = Array(
         repeating: GridItem(.flexible(minimum: 104), spacing: 7),
         count: 4
     )
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("额度配色")
-                    .font(.system(size: 11, weight: .semibold))
-                Text("应用于菜单栏、详情与小组件")
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary)
-            }
+        VStack(alignment: .leading, spacing: 14) {
+            appearanceSection(
+                title: "Bar 样式",
+                subtitle: "选择进度条的端点形状"
+            ) {
+                HStack(alignment: .top, spacing: 7) {
+                    ForEach(QuotaBarShape.allCases) { shape in
+                        Button {
+                            barShapeSelection = shape.rawValue
+                        } label: {
+                            VStack(spacing: 8) {
+                                VStack(spacing: 6) {
+                                    ForEach([100.0, 60.0, 10.0], id: \.self) { remaining in
+                                        QuotaBar(
+                                            remainingPercent: remaining,
+                                            height: 8,
+                                            marker: previewMarker(for: remaining),
+                                            animatesChanges: false,
+                                            shapeOverride: shape,
+                                            themeOverride: selectedTheme
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal, 4)
+                                .frame(height: 50, alignment: .center)
 
-            LazyVGrid(columns: columns, spacing: 7) {
-                ForEach(QuotaColorTheme.allCases) { theme in
-                    Button {
-                        selection = theme.rawValue
-                    } label: {
-                        VStack(alignment: .leading, spacing: 5) {
-                            HStack(spacing: 4) {
-                                Text(theme.name)
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundColor(.primary)
-                                Spacer(minLength: 2)
-                                if selection == theme.rawValue {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(.accentColor)
+                                VStack(spacing: 2) {
+                                    selectionTitle(
+                                        shape.name,
+                                        isSelected: barShapeSelection == shape.rawValue
+                                    )
+                                    Text(shape.description)
+                                        .font(.system(size: 8))
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
                                 }
                             }
+                            .selectionCard(isSelected: barShapeSelection == shape.rawValue)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            Divider()
+
+            appearanceSection(
+                title: "额度配色",
+                subtitle: "应用于菜单栏、详情与小组件"
+            ) {
+                LazyVGrid(columns: themeColumns, spacing: 7) {
+                ForEach(QuotaColorTheme.allCases) { theme in
+                    Button {
+                        themeSelection = theme.rawValue
+                    } label: {
+                        VStack(alignment: .leading, spacing: 5) {
+                            selectionTitle(
+                                theme.name,
+                                isSelected: themeSelection == theme.rawValue
+                            )
 
                             HStack(spacing: 3) {
                                 ForEach([100.0, 60.0, 10.0], id: \.self) { remaining in
                                     QuotaBar(
                                         remainingPercent: remaining,
                                         height: 5,
+                                        marker: previewMarker(for: remaining),
                                         animatesChanges: false,
+                                        shapeOverride: selectedShape,
                                         themeOverride: theme
                                     )
                                 }
@@ -414,26 +455,80 @@ private struct QuotaThemeSelector: View {
                                 .foregroundColor(.secondary)
                                 .lineLimit(1)
                         }
-                        .padding(7)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7)
-                                .fill(selection == theme.rawValue
-                                    ? Color.accentColor.opacity(0.09)
-                                    : Color.secondary.opacity(0.06))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 7)
-                                .stroke(selection == theme.rawValue
-                                    ? Color.accentColor.opacity(0.65)
-                                    : Color.secondary.opacity(0.14), lineWidth: 0.75)
-                        )
-                        .contentShape(Rectangle())
+                        .selectionCard(isSelected: themeSelection == theme.rawValue)
                     }
                     .buttonStyle(.plain)
                 }
+                }
             }
         }
+    }
+
+    private var selectedShape: QuotaBarShape {
+        QuotaBarShape(rawValue: barShapeSelection) ?? .square
+    }
+
+    private var selectedTheme: QuotaColorTheme {
+        QuotaColorTheme(rawValue: themeSelection) ?? .classic
+    }
+
+    /// 预览刻度放在各自填充色内部，避免贴着填充边界而看起来像遮挡额度。
+    private func previewMarker(for remainingPercent: Double) -> Double {
+        min(100, max(0, remainingPercent)) / 100 * 0.65
+    }
+
+    @ViewBuilder
+    private func appearanceSection<Content: View>(
+        title: String,
+        subtitle: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                Text(subtitle)
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary)
+            }
+
+            content()
+        }
+    }
+
+    private func selectionTitle(_ title: String, isSelected: Bool) -> some View {
+        HStack(spacing: 4) {
+            Text(title)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.primary)
+            Spacer(minLength: 2)
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.accentColor)
+            }
+        }
+    }
+}
+
+private extension View {
+    func selectionCard(isSelected: Bool) -> some View {
+        self
+            .padding(7)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(isSelected
+                        ? Color.accentColor.opacity(0.09)
+                        : Color.secondary.opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7)
+                    .stroke(isSelected
+                        ? Color.accentColor.opacity(0.65)
+                        : Color.secondary.opacity(0.14), lineWidth: 0.75)
+            )
+            .contentShape(Rectangle())
     }
 }
 #endif
@@ -729,7 +824,7 @@ struct ProviderRowView: View {
 
             if let remaining = quota.remainingPercent {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(Int(remaining.rounded()))%")
+                    Text(QuotaDisplay.percentText(remaining))
                         .font(.subheadline.weight(.semibold).monospacedDigit())
                         .foregroundColor(.primary)
 
@@ -770,7 +865,7 @@ struct ProviderRowView: View {
                 HStack(spacing: 8) {
                     QuotaBar(remainingPercent: remainingPercent)
 
-                    Text("\(Int(remainingPercent.rounded()))%")
+                    Text(QuotaDisplay.percentText(remainingPercent))
                         .font(.subheadline.weight(.semibold).monospacedDigit())
                         .foregroundColor(.primary)
                         .fixedSize()

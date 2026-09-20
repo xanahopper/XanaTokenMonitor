@@ -91,6 +91,21 @@ final class XanaTokenMonitorKitTests: XCTestCase {
         XCTAssertEqual(themeColors.count, QuotaColorTheme.allCases.count)
     }
 
+    func testQuotaBarShapesExposeThreeAppearanceOptionsWithSquareDefault() {
+        XCTAssertEqual(QuotaBarShape.allCases, [.pill, .softSquare, .square])
+        XCTAssertEqual(QuotaBarShape.square.name, "直角")
+        XCTAssertEqual(QuotaBarShape.square.description, "完全直角")
+        XCTAssertEqual(QuotaBarShape.storageKey, "quotaBarShape")
+    }
+
+    func testQuotaPercentTextPreservesLowRemainingValues() {
+        XCTAssertEqual(QuotaDisplay.percentText(0), "0%")
+        XCTAssertEqual(QuotaDisplay.percentText(0.4), "<1%")
+        XCTAssertEqual(QuotaDisplay.percentText(3.26), "3.3%")
+        XCTAssertEqual(QuotaDisplay.percentText(10), "10%")
+        XCTAssertEqual(QuotaDisplay.percentText(42.4), "42%")
+    }
+
     func testEveryQuotaThemeHasDistinctTracksWithVisibleFillContrast() {
         let lightTracks = Set(QuotaColorTheme.allCases.map {
             QuotaPalette.trackHexString(theme: $0, darkAppearance: false)

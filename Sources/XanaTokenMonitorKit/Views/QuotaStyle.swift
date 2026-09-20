@@ -118,6 +118,8 @@ enum QuotaPalette {
         let low: RGB
         let trackLight: RGB
         let trackDark: RGB
+        let markerLight: RGB
+        let markerDark: RGB
     }
 
     static func rgb(
@@ -160,6 +162,17 @@ enum QuotaPalette {
         return Color(red: c.r / 255, green: c.g / 255, blue: c.b / 255)
     }
 
+    /// 额度刻度是主题 palette 的一部分，针对浅色/深色外观分别提供高对比颜色。
+    static func markerColor(
+        theme: QuotaColorTheme = .selected,
+        colorScheme: ColorScheme
+    ) -> Color {
+        let colors = definition(for: theme)
+        let marker = colorScheme == .dark ? colors.markerDark : colors.markerLight
+        return Color(red: marker.r / 255, green: marker.g / 255, blue: marker.b / 255)
+            .opacity(0.88)
+    }
+
     /// 与 remainingColor 同色的十六进制值(供 Widget 等跨进程读取)。
     static func hexString(
         remainingPercent: Double,
@@ -190,7 +203,9 @@ enum QuotaPalette {
                 middle: (255, 214, 10),
                 low: (255, 69, 58),
                 trackLight: (231, 232, 235),
-                trackDark: (56, 58, 64)
+                trackDark: (56, 58, 64),
+                markerLight: (58, 61, 67),
+                markerDark: (226, 229, 234)
             )
         case .minimal:
             return Definition(
@@ -198,7 +213,9 @@ enum QuotaPalette {
                 middle: (113, 123, 133),
                 low: (61, 68, 75),
                 trackLight: (236, 239, 241),
-                trackDark: (37, 40, 44)
+                trackDark: (37, 40, 44),
+                markerLight: (48, 52, 58),
+                markerDark: (224, 228, 233)
             )
         case .calm:
             return Definition(
@@ -206,7 +223,9 @@ enum QuotaPalette {
                 middle: (100, 164, 218),
                 low: (125, 117, 189),
                 trackLight: (231, 236, 242),
-                trackDark: (39, 50, 63)
+                trackDark: (39, 50, 63),
+                markerLight: (53, 70, 82),
+                markerDark: (224, 236, 244)
             )
         case .cyber:
             return Definition(
@@ -214,7 +233,9 @@ enum QuotaPalette {
                 middle: (122, 92, 255),
                 low: (255, 43, 214),
                 trackLight: (239, 232, 247),
-                trackDark: (38, 29, 53)
+                trackDark: (38, 29, 53),
+                markerLight: (49, 40, 62),
+                markerDark: (236, 246, 241)
             )
         case .arctic:
             return Definition(
@@ -222,7 +243,9 @@ enum QuotaPalette {
                 middle: (136, 192, 208),
                 low: (191, 97, 106),
                 trackLight: (229, 233, 240),
-                trackDark: (52, 59, 73)
+                trackDark: (52, 59, 73),
+                markerLight: (58, 70, 78),
+                markerDark: (228, 237, 240)
             )
         case .cream:
             return Definition(
@@ -230,7 +253,9 @@ enum QuotaPalette {
                 middle: (229, 200, 144),
                 low: (231, 130, 132),
                 trackLight: (239, 230, 226),
-                trackDark: (54, 50, 63)
+                trackDark: (54, 50, 63),
+                markerLight: (78, 59, 64),
+                markerDark: (244, 237, 230)
             )
         case .ocean:
             return Definition(
@@ -238,7 +263,9 @@ enum QuotaPalette {
                 middle: (14, 165, 233),
                 low: (79, 70, 229),
                 trackLight: (224, 240, 242),
-                trackDark: (25, 55, 64)
+                trackDark: (25, 55, 64),
+                markerLight: (40, 69, 72),
+                markerDark: (224, 244, 241)
             )
         case .sunset:
             return Definition(
@@ -246,7 +273,9 @@ enum QuotaPalette {
                 middle: (251, 146, 60),
                 low: (225, 29, 72),
                 trackLight: (245, 224, 218),
-                trackDark: (74, 47, 52)
+                trackDark: (74, 47, 52),
+                markerLight: (78, 45, 54),
+                markerDark: (247, 237, 226)
             )
         case .forest:
             return Definition(
@@ -254,7 +283,9 @@ enum QuotaPalette {
                 middle: (202, 138, 4),
                 low: (154, 52, 18),
                 trackLight: (228, 235, 225),
-                trackDark: (38, 58, 46)
+                trackDark: (38, 58, 46),
+                markerLight: (48, 68, 49),
+                markerDark: (232, 241, 222)
             )
         case .morandi:
             return Definition(
@@ -262,13 +293,45 @@ enum QuotaPalette {
                 middle: (184, 165, 140),
                 low: (176, 121, 121),
                 trackLight: (235, 229, 226),
-                trackDark: (63, 56, 60)
+                trackDark: (63, 56, 60),
+                markerLight: (76, 70, 70),
+                markerDark: (232, 230, 228)
             )
         }
     }
 
     private static func lerp(_ a: RGB, _ b: RGB, _ t: Double) -> RGB {
         (a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t)
+    }
+}
+
+/// 额度条的端点形状。
+///
+/// `square` 是默认样式：轨道和填充都使用完全直角，且不带外部描边。
+/// `softSquare` 与 `pill` 保留给需要旧视觉的特殊场景。
+enum QuotaBarShape: String, CaseIterable, Identifiable, Equatable {
+    static let storageKey = "quotaBarShape"
+
+    case pill
+    case softSquare
+    case square
+
+    var id: Self { self }
+
+    var name: String {
+        switch self {
+        case .pill: return "全圆角"
+        case .softSquare: return "小圆角"
+        case .square: return "直角"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .pill: return "两端为半圆"
+        case .softSquare: return "保留轻微圆角"
+        case .square: return "完全直角"
+        }
     }
 }
 
@@ -279,34 +342,60 @@ struct QuotaBar: View {
     /// 按额度日分配后的可用下限(0...1),画一根细竖线标记
     var marker: Double? = nil
     var animatesChanges = true
+    var shapeOverride: QuotaBarShape? = nil
     var themeOverride: QuotaColorTheme?
+    @AppStorage(QuotaBarShape.storageKey) private var selectedShapeRawValue = QuotaBarShape.square.rawValue
     @AppStorage(QuotaColorTheme.storageKey) private var selectedThemeRawValue = QuotaColorTheme.classic.rawValue
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(QuotaPalette.trackColor(
-                        theme: resolvedTheme,
-                        colorScheme: colorScheme
-                    ))
+                if resolvedShape == .pill {
+                    Capsule()
+                        .fill(QuotaPalette.trackColor(
+                            theme: resolvedTheme,
+                            colorScheme: colorScheme
+                        ))
+                } else if resolvedShape == .softSquare {
+                    RoundedRectangle(cornerRadius: trackCornerRadius, style: .continuous)
+                        .fill(QuotaPalette.trackColor(
+                            theme: resolvedTheme,
+                            colorScheme: colorScheme
+                        ))
+                } else {
+                    Rectangle()
+                        .fill(QuotaPalette.trackColor(
+                            theme: resolvedTheme,
+                            colorScheme: colorScheme
+                        ))
+                }
 
-                Capsule()
-                    .stroke(Color.primary.opacity(0.18), lineWidth: 0.5)
-
-                Capsule()
-                    .fill(QuotaPalette.remainingColor(
-                        remainingPercent: remainingPercent,
-                        theme: resolvedTheme
-                    ))
-                    .frame(width: fillWidth(total: proxy.size.width))
+                if resolvedShape == .pill {
+                    Capsule()
+                        .fill(QuotaPalette.remainingColor(
+                            remainingPercent: remainingPercent,
+                            theme: resolvedTheme
+                        ))
+                        .frame(width: fillWidth(total: proxy.size.width))
+                } else {
+                    Rectangle()
+                        .fill(QuotaPalette.remainingColor(
+                            remainingPercent: remainingPercent,
+                            theme: resolvedTheme
+                        ))
+                        .frame(width: fillWidth(total: proxy.size.width))
+                        .clipShape(RoundedRectangle(cornerRadius: fillCornerRadius, style: .continuous))
+                }
 
                 if let marker {
                     Rectangle()
-                        .fill(Color.primary.opacity(0.45))
+                        .fill(QuotaPalette.markerColor(
+                            theme: resolvedTheme,
+                            colorScheme: colorScheme
+                        ))
                         .frame(width: 1)
-                        .offset(x: min(1, max(0, marker)) * proxy.size.width - 0.5)
+                    .offset(x: min(1, max(0, marker)) * proxy.size.width - 0.5)
                 }
             }
         }
@@ -318,9 +407,41 @@ struct QuotaBar: View {
         themeOverride ?? QuotaColorTheme(rawValue: selectedThemeRawValue) ?? .classic
     }
 
+    private var resolvedShape: QuotaBarShape {
+        shapeOverride ?? QuotaBarShape(rawValue: selectedShapeRawValue) ?? .square
+    }
+
+    private var trackCornerRadius: CGFloat {
+        switch resolvedShape {
+        case .pill:
+            return height / 2
+        case .softSquare:
+            return min(2, height / 2)
+        case .square:
+            return 0
+        }
+    }
+
+    private var fillCornerRadius: CGFloat {
+        guard resolvedShape == .softSquare else { return 0 }
+        let remaining = min(100, max(0, remainingPercent))
+        return remaining <= 5 ? 0 : trackCornerRadius
+    }
+
     private func fillWidth(total: CGFloat) -> CGFloat {
-        guard remainingPercent > 0 else { return 0 }
-        return min(total, max(height, total * remainingPercent / 100))
+        guard total > 0 else { return 0 }
+        let remaining = min(100, max(0, remainingPercent))
+        guard remaining > 0 else { return 0 }
+
+        let exactWidth = min(total, total * remaining / 100)
+        switch resolvedShape {
+        case .pill:
+            // 保留旧胶囊样式的最小端帽，避免它在窄条中消失。
+            return max(height, exactWidth)
+        case .softSquare, .square:
+            // 方条可以保留真实长度；仅保证至少有 1px 的可见线。
+            return max(1, exactWidth)
+        }
     }
 }
 
@@ -393,12 +514,27 @@ enum QuotaDisplay {
         case "tokens":
             return "\(Int(balance.amount).formatted()) tokens"
         case "percent", "used_percent":
-            return "\(Int((min(100, max(0, (1 - balance.amount) * 100))).rounded()))%"
+            return percentText((1 - balance.amount) * 100)
         case "quota":
             return "\(balance.amount.formatted()) quota"
         default:
             return balance.amount.formatted(.currency(code: balance.currency))
         }
+    }
+
+    /// 低额度时保留更多信息，避免 0.4% 和 0% 都显示为「0%」。
+    static func percentText(_ remainingPercent: Double) -> String {
+        let remaining = min(100, max(0, remainingPercent))
+        if remaining == 0 {
+            return "0%"
+        }
+        if remaining < 1 {
+            return "<1%"
+        }
+        if remaining < 10 {
+            return "\(remaining.formatted(.number.precision(.fractionLength(1))))%"
+        }
+        return "\(Int(remaining.rounded()))%"
     }
 
     static func balanceColor(for balance: Balance) -> Color {
