@@ -196,6 +196,7 @@ private struct DockIconSync: NSViewRepresentable {
         func attach(_ window: NSWindow) {
             guard attachedWindow !== window else { return }
             attachedWindow = window
+            window.title = "XanaTokenMonitor"
             MainWindowTracker.window = window
             observeClose(of: window)
 

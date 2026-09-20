@@ -105,7 +105,7 @@ struct ProviderListView: View {
             }
             #else
             mainContent
-                .navigationTitle("Token Monitor")
+                .navigationTitle("XanaTokenMonitor")
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         Button(action: { panelActions.showAddProvider = true }) {
@@ -173,11 +173,7 @@ struct ProviderListView: View {
 
             switch selectedConfigurationTab {
             case .providers:
-                if providerManager.providers.isEmpty {
-                    emptyStateView
-                } else {
-                    providerList
-                }
+                providerSettings
             case .colors:
                 ScrollView {
                     QuotaAppearanceSelector(
@@ -202,6 +198,51 @@ struct ProviderListView: View {
     }
 
     #if os(macOS)
+    private var providerSettings: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Spacer()
+
+                Button {
+                    Task { await providerManager.fetchAllBalances() }
+                } label: {
+                    HStack(spacing: 5) {
+                        RefreshFeedbackIcon(
+                            isRefreshing: providerManager.isRefreshing,
+                            result: providerManager.lastRefreshResult,
+                            size: 10
+                        )
+                        Text("刷新")
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .allowsHitTesting(!providerManager.isRefreshing)
+                .help(refreshHelp)
+                .accessibilityLabel(refreshHelp)
+
+                Button {
+                    panelActions.showAddProvider = true
+                } label: {
+                    Label("添加", systemImage: "plus")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .help("添加提供方")
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+
+            Divider()
+
+            if providerManager.providers.isEmpty {
+                emptyStateView
+            } else {
+                providerList
+            }
+        }
+    }
+
     private var generalSettings: some View {
         VStack(alignment: .leading, spacing: 14) {
             GroupBox("启动") {
@@ -263,37 +304,9 @@ struct ProviderListView: View {
 
     /// 配置窗口的自绘顶栏(配合 hiddenTitleBar 使用)
     private var header: some View {
-        HStack(spacing: 10) {
-            Text("Token Monitor")
+        HStack {
+            Text("XanaTokenMonitor")
                 .font(.system(size: 13, weight: .semibold))
-
-            Spacer()
-
-            Button {
-                Task { await providerManager.fetchAllBalances() }
-            } label: {
-                RefreshFeedbackIcon(
-                    isRefreshing: providerManager.isRefreshing,
-                    result: providerManager.lastRefreshResult
-                )
-                    .frame(width: 22, height: 20)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .allowsHitTesting(!providerManager.isRefreshing)
-            .help(refreshHelp)
-            .accessibilityLabel(refreshHelp)
-
-            Button {
-                panelActions.showAddProvider = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 11, weight: .medium))
-                    .frame(width: 22, height: 20)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help("添加提供方")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
