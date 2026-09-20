@@ -246,7 +246,7 @@ struct MenuBarQuotaPanel: View {
                 QuotaBar(remainingPercent: remaining, height: 5, marker: QuotaDisplay.timeMarker(quota))
                     .frame(maxWidth: .infinity)
 
-                Text("\(Int(remaining.rounded()))%")
+                Text(QuotaDisplay.percentText(remaining))
                     .font(.system(size: 9, weight: .semibold))
                     .monospacedDigit()
                     .foregroundColor(.primary)
@@ -386,7 +386,7 @@ struct MenuBarQuotaPanel: View {
 
                     Spacer()
 
-                    Text("\(Int(remaining.rounded()))%")
+                    Text(QuotaDisplay.percentText(remaining))
                         .font(.system(size: 20, weight: .bold).monospacedDigit())
                         .foregroundColor(.primary)
                 }

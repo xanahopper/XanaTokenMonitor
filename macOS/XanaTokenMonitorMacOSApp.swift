@@ -1,19 +1,20 @@
+import AppKit
 import SwiftUI
 import XanaTokenMonitorKit
 
 @main
 struct XanaTokenMonitorMacOSApp: App {
+    @NSApplicationDelegateAdaptor(MainAppDelegate.self) private var appDelegate
     @State private var providerManager = ProviderManager()
     @AppStorage(QuotaColorTheme.storageKey) private var quotaColorThemeRawValue = QuotaColorTheme.classic.rawValue
 
     var body: some Scene {
         WindowGroup {
             ProviderListView(providerManager: providerManager)
-                .frame(minWidth: 420, minHeight: 300)
+                .frame(minWidth: 680, minHeight: 420)
                 .modifier(MainWindowLifecycle())
         }
-        .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 520, height: 380)
+        .defaultSize(width: 720, height: 460)
         .windowResizability(.contentMinSize)
 
         MenuBarExtra {
@@ -41,8 +42,8 @@ struct XanaTokenMonitorMacOSApp: App {
         .menuBarExtraStyle(.window)
     }
 
-    /// 状态栏图标:每个提供方一组竖条(每根对应一个配额周期,高度 = 剩余百分比),
-    /// 组间用细分隔线隔开。
+/// 状态栏图标:每个提供方一组竖条(每根对应一个配额周期,高度 = 剩余百分比),
+/// 组间用细分隔线隔开。
     private static func statusBarImage(
         groups: [[(label: String, value: Double)]],
         theme: QuotaColorTheme
@@ -161,12 +162,131 @@ struct XanaTokenMonitorMacOSApp: App {
 
 }
 
+private final class MainAppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        MainMenuLocalization.apply()
+        DispatchQueue.main.async {
+            MainMenuLocalization.apply()
+        }
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        MainMenuLocalization.apply()
+    }
+}
+
+private enum MainMenuLocalization {
+    private static let appName = "XanaTokenMonitor"
+
+    private static let translations: [String: String] = [
+        "File": "文件",
+        "Edit": "编辑",
+        "View": "显示",
+        "Window": "窗口",
+        "Help": "帮助",
+        "About": "关于",
+        "Services": "服务",
+        "Hide": "隐藏",
+        "Hide Others": "隐藏其他",
+        "Show All": "全部显示",
+        "Quit": "退出",
+        "Undo": "撤销",
+        "Redo": "重做",
+        "Cut": "剪切",
+        "Copy": "拷贝",
+        "Paste": "粘贴",
+        "Paste and Match Style": "粘贴并匹配样式",
+        "Delete": "删除",
+        "Select All": "全选",
+        "Find": "查找",
+        "Spelling and Grammar": "拼写和语法",
+        "Substitutions": "替换",
+        "Transformations": "转换",
+        "Speech": "语音",
+        "Start Speaking": "开始朗读",
+        "Stop Speaking": "停止朗读",
+        "Enter Full Screen": "进入全屏",
+        "Exit Full Screen": "退出全屏",
+        "Minimize": "最小化",
+        "Zoom": "缩放",
+        "Bring All to Front": "将全部置于最前",
+        "Show Tab Bar": "显示标签页栏",
+        "Show All Tabs": "显示所有标签页",
+        "Close Window": "关闭窗口",
+        "Close": "关闭",
+        "Next Window": "下一个窗口",
+        "Previous Window": "上一个窗口",
+        "Show Toolbar": "显示工具栏",
+        "Hide Toolbar": "隐藏工具栏",
+        "Customize Toolbar…": "自定义工具栏…",
+        "Settings…": "设置…",
+        "Preferences…": "设置…"
+    ]
+
+    static func apply() {
+        guard let mainMenu = NSApp.mainMenu else { return }
+
+        guard let appMenuItem = mainMenu.items.first else { return }
+        let editMenuItem = mainMenu.items.first {
+            $0.title == "Edit" || $0.title == "编辑"
+        }
+
+        // 这是一个菜单栏工具和单窗口设置页,保留应用菜单与编辑菜单即可。
+        // 编辑菜单仍然服务于设置页里的文本框,其余系统菜单没有实际内容。
+        let itemsToKeep = [appMenuItem, editMenuItem].compactMap { $0 }
+        for item in mainMenu.items where !itemsToKeep.contains(where: { $0 === item }) {
+            mainMenu.removeItem(item)
+        }
+
+        appMenuItem.title = appName
+        if let submenu = appMenuItem.submenu {
+            localize(submenu)
+        }
+
+        if let editMenuItem {
+            editMenuItem.title = "编辑"
+            if let submenu = editMenuItem.submenu {
+                localize(submenu)
+            }
+        }
+    }
+
+    private static func localize(_ menu: NSMenu) {
+        for item in menu.items {
+            item.title = localizedItemTitle(item.title)
+            if let submenu = item.submenu {
+                localize(submenu)
+            }
+        }
+    }
+
+    private static func localizedItemTitle(_ title: String) -> String {
+        if let translation = translations[title] {
+            return translation
+        }
+
+        if title.hasPrefix("About ") {
+            return "关于 \(appName)"
+        }
+        if title.hasPrefix("Hide ") {
+            return "隐藏 \(appName)"
+        }
+        if title.hasPrefix("Quit ") {
+            return "退出 \(appName)"
+        }
+        return title
+    }
+}
+
 /// 主窗口生命周期:窗口挂载时同步接管;首次挂载立即隐藏(纯菜单栏模式),
 /// 之后每次新窗口出现都恢复常规模式并前置。
 struct MainWindowLifecycle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(DockIconSync())
+            .onAppear {
+                MainMenuLocalization.apply()
+            }
             .onOpenURL { _ in
                 NSApp.activate(ignoringOtherApps: true)
             }
